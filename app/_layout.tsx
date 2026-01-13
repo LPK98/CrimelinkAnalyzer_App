@@ -1,8 +1,11 @@
 import { Stack } from "expo-router";
-// If using Expo Router, import your CSS file in the app/_layout.tsx file
-import './global.css';
-
+import "./global.css";
 
 export default function RootLayout() {
-  return <Stack />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="login" />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
+  );
 }

@@ -1,20 +1,24 @@
-import React from "react";
-import { Text, TextInput, View } from "react-native";
-import './global.css';
-
+import React, { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { router } from "expo-router";
+import { useAuth } from "../src/auth/useAuth";
 
 export default function Index() {
+  const { user, loading } = useAuth();
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (user) {
+      router.replace("/(field)/dashboard");
+    } else {
+      router.replace("/(auth)/login");
+    }
+  }, [user, loading]);
+
   return (
-    <View  className="bg-slate-700 rounded-xl"
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text className="text-yellow-500 text-3xl font-bold">Edit app/index.tsx to edit this screen.</Text>
-      <TextInput style={{ width: 200, height: 40, borderWidth: 1 }} className="rounded-lg bg-red-600"/>
-      
+    <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      <ActivityIndicator />
     </View>
   );
 }

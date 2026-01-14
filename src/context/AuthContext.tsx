@@ -1,12 +1,16 @@
-import React, { createContext, useEffect, useMemo, useState } from "react";
 import { router } from "expo-router";
-import { AuthContextType, AuthUser } from "./AuthContextDefinition";
-import { getUser, clearTokens } from "./auth";
-import { loginFieldOfficer, logout as doLogout } from "./authService";
+import React, { createContext, useEffect, useMemo, useState } from "react";
+import { getUser } from "../auth/auth";
+import { AuthContextType, AuthUser } from "../types/AuthContextDefinition";
+import { loginFieldOfficer, logout as doLogout } from "../services/authService";
 
 export const AuthContext = createContext<AuthContextType | null>(null);
 
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
+export default function AuthProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -25,18 +29,18 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
   const login = async (username: string, password: string) => {
     const loggedUser = await loginFieldOfficer(username, password);
     setUser(loggedUser);
-    router.replace("/(field)/dashboard");
+    router.replace("/(tabs)/Dashboard");
   };
 
   const logout = async () => {
     await doLogout();
     setUser(null);
-    router.replace("/");
+    router.replace("/login");
   };
 
   const value = useMemo(
     () => ({ user, loading, login, logout }),
-    [user, loading]
+    [user, loading],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

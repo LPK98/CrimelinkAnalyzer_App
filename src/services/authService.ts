@@ -1,5 +1,5 @@
 import { api } from "../api/api";
-import { setTokens, setUser, getRefreshToken, clearTokens } from "./auth";
+import { setTokens, setUser, getRefreshToken, clearTokens } from "../auth/auth";
 
 export type LoginResponse = {
   accessToken: string;

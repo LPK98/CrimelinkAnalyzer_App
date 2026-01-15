@@ -23,7 +23,7 @@ export default function LoginScreen() {
 
   const handleSubmit = async () => {
     setError("");
-
+    console.log("Login attempt with email:", email);  ///REMOVE
     if (!email || !password) {
       setError("Please enter both email and password");
       return;

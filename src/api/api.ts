@@ -1,11 +1,12 @@
 import axios from "axios";
 import { getAccessToken } from "../auth/auth";
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL || "http://10.128.90.220:8080" || "http://localhost:8080";
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+console.log("API_BASE_URL:", API_BASE_URL); ///REMOVE
 
-//  Android emulator: 10.0.2.2
-// Real device: use your PC IP like http://192.168.x.x:8080
+if (!API_BASE_URL) {
+  throw new Error("API base URL is not defined in environment variables");
+}
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

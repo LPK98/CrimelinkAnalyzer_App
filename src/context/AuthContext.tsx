@@ -29,7 +29,7 @@ export default function AuthProvider({
   const login = async (username: string, password: string) => {
     const loggedUser = await loginFieldOfficer(username, password);
     setUser(loggedUser);
-    router.replace("/(tabs)/Dashboard");
+    router.replace("/Dashboard");
   };
 
   const logout = async () => {

@@ -11,16 +11,16 @@ function Guard({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
 
-    const isFieldRoute = pathname.startsWith("/(field)");
-    const isAuthRoute = pathname.startsWith("/(auth)");
+    const isAuthRoute = pathname === "/login";
 
-    if (!user && isFieldRoute) {
+    if (!user && !isAuthRoute) {
       router.replace("/login");
+      return;
     }
 
     // Logged in but still on auth routes (login)
     if (user && isAuthRoute) {
-      router.replace("/(tabs)/Dashboard");
+      router.replace("/Dashboard");
     }
   }, [user, loading, pathname]);
 
@@ -33,7 +33,7 @@ export default function RootLayout() {
       <Guard>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="login" />
-          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="Dashboard" />
         </Stack>
       </Guard>
     </AuthProvider>

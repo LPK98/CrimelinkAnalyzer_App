@@ -408,26 +408,6 @@ export default function PlateRegistryScreen() {
                     {item.lostDate || "—"}
                   </Text>
                 </View>
-
-                <View className="flex-row gap-2 mt-4">
-                  <Pressable
-                    className="flex-1 bg-blue-500 rounded-md py-3"
-                    onPress={() => openEdit(item)}
-                  >
-                    <Text className="text-white font-bold text-center">
-                      Edit
-                    </Text>
-                  </Pressable>
-
-                  <Pressable
-                    className="flex-1 bg-red-500 rounded-md py-3"
-                    onPress={() => handleDeleteVehicle(item.id)}
-                  >
-                    <Text className="text-white font-bold text-center">
-                      Delete
-                    </Text>
-                  </Pressable>
-                </View>
               </View>
             )}
           />

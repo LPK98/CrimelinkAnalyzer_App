@@ -4,9 +4,7 @@ import axios from "axios";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
-  Modal,
   Platform,
   Pressable,
   SafeAreaView,
@@ -22,7 +20,7 @@ type VehicleForm = {
   ownerName: string;
   vehicleType: string;
   status: string;
-  lostDate: string; 
+  lostDate: string;
 };
 
 const VEHICLE_TYPES = [
@@ -54,30 +52,11 @@ export default function PlateRegistryScreen() {
 
   const [error, setError] = useState<string | null>(null);
 
-  // Add modal
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [vehicleData, setVehicleData] = useState<VehicleForm>({
-    numberPlate: "",
-    ownerName: "",
-    vehicleType: "",
-    status: "",
-    lostDate: "",
-  });
-
-  // Edit modal
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
-
-  // Date picker controls (mobile)
-  const [showLostDatePickerAdd, setShowLostDatePickerAdd] = useState(false);
   const [showLostDatePickerFilter, setShowLostDatePickerFilter] =
     useState(false);
-  const [showLostDatePickerEdit, setShowLostDatePickerEdit] = useState(false);
-
 
   useEffect(() => {
     fetchVehicles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchVehicles = async () => {
@@ -132,89 +111,8 @@ export default function PlateRegistryScreen() {
     setSelectedDate("");
   };
 
-  const handleAddVehicle = async () => {
-    if (
-      !vehicleData.numberPlate ||
-      !vehicleData.ownerName ||
-      !vehicleData.vehicleType
-    ) {
-      setError(
-        "Please fill in all required fields (Plate, Owner, Vehicle Type).",
-      );
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const res = await axios.post(
-        `${API_BASE_URL}/api/vehicles`,
-        vehicleData,
-        {
-          headers: { "Content-Type": "application/json" },
-        },
-      );
-
-      setVehicles((prev) => [...prev, res.data]);
-      setShowAddModal(false);
-      setVehicleData({
-        numberPlate: "",
-        ownerName: "",
-        vehicleType: "",
-        status: "",
-        lostDate: "",
-      });
-
-      Alert.alert("Success", "Vehicle added successfully!");
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "Failed to add vehicle");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openEdit = (vehicle: Vehicle) => {
-    setEditingVehicle({ ...vehicle });
-    setError(null);
-    setShowEditModal(true);
-  };
-
-  const handleUpdateVehicle = async () => {
-    if (!editingVehicle?.id) {
-      setError("No vehicle selected for update.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-
-      const res = await axios.put(
-        `${API_BASE_URL}/api/vehicles/${editingVehicle.id}`,
-        editingVehicle,
-        { headers: { "Content-Type": "application/json" } },
-      );
-
-      setVehicles((prev) =>
-        prev.map((v) => (v.id === editingVehicle.id ? res.data : v)),
-      );
-      setShowEditModal(false);
-      setEditingVehicle(null);
-
-      Alert.alert("Success", "Vehicle updated successfully!");
-    } catch (e: any) {
-      setError(e?.response?.data?.message || "Failed to update vehicle");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  
-
   return (
     <SafeAreaView className="flex-1 bg-slate-500">
-    
       <View className="bg-slate-800 p-4 mt-10">
         <Text className="text-white text-2xl font-bold">Plate Registry</Text>
 
@@ -244,7 +142,6 @@ export default function PlateRegistryScreen() {
             </Picker>
           </View>
 
-          {/* Vehicle Type Filter */}
           <View className="flex-1 bg-slate-200 rounded-md overflow-hidden">
             <Picker
               selectedValue={vehicleTypeFilter}
@@ -261,26 +158,25 @@ export default function PlateRegistryScreen() {
           </View>
         </View>
 
-        {/* Lost Date Filter */}
         <View className="flex-row items-center justify-between bg-white rounded-md px-3 py-3 mt-4">
           <Text className="text-slate-700 font-semibold">Lost Date</Text>
-            <View className="flex-row items-center gap-2">
-              <Text className="text-slate-600">{selectedDate || ""}</Text>
+          <View className="flex-row items-center gap-2">
+            <Text className="text-slate-600">{selectedDate || ""}</Text>
 
-              <Pressable
-                className="bg-slate-700 px-3 py-2 rounded-md"
-                onPress={() => setShowLostDatePickerFilter(true)}
-              >
-                <Text className="text-white font-semibold">Pick</Text>
-              </Pressable>
+            <Pressable
+              className="bg-slate-700 px-3 py-2 rounded-md"
+              onPress={() => setShowLostDatePickerFilter(true)}
+            >
+              <Text className="text-white font-semibold">Pick</Text>
+            </Pressable>
 
-              <Pressable
-                className="bg-gray-500 px-3 py-2 rounded-md"
-                onPress={() => setSelectedDate("")}
-              >
-                <Text className="text-white font-semibold">Clear</Text>
-              </Pressable>
-            </View>
+            <Pressable
+              className="bg-gray-500 px-3 py-2 rounded-md"
+              onPress={() => setSelectedDate("")}
+            >
+              <Text className="text-white font-semibold">Clear</Text>
+            </Pressable>
+          </View>
         </View>
 
         {showLostDatePickerFilter && (
@@ -295,7 +191,6 @@ export default function PlateRegistryScreen() {
           />
         )}
 
-        {/* Buttons Row */}
         <View className="flex-row mt-4">
           <Pressable
             className={`flex-1 rounded-md px-4 py-3 ${loading ? "bg-gray-400" : "bg-green-500"}`}
@@ -327,7 +222,6 @@ export default function PlateRegistryScreen() {
         )}
       </View>
 
-      {/* List */}
       <View className="flex-1 p-4">
         {loading ? (
           <View className="flex-1 items-center justify-center">
@@ -391,308 +285,6 @@ export default function PlateRegistryScreen() {
           />
         )}
       </View>
-
-      {/* ADD MODAL */}
-      <Modal visible={showAddModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 items-center justify-center p-4">
-          <View className="bg-white w-full rounded-xl p-5">
-            <Text className="text-xl font-extrabold text-slate-800">
-              Add New Vehicle
-            </Text>
-
-            <View className="mt-4 space-y-3">
-              <View>
-                <Text className="text-slate-700 font-semibold mb-1">
-                  Number Plate <Text className="text-red-500">*</Text>
-                </Text>
-                <TextInput
-                  value={vehicleData.numberPlate}
-                  onChangeText={(t) =>
-                    setVehicleData((p) => ({ ...p, numberPlate: t }))
-                  }
-                  placeholder="e.g., ABC-1234"
-                  className="border border-gray-300 rounded-md px-3 py-3"
-                />
-              </View>
-
-              <View>
-                <Text className="text-slate-700 font-semibold mb-1">
-                  Owner Name <Text className="text-red-500">*</Text>
-                </Text>
-                <TextInput
-                  value={vehicleData.ownerName}
-                  onChangeText={(t) =>
-                    setVehicleData((p) => ({ ...p, ownerName: t }))
-                  }
-                  placeholder="e.g., John Doe"
-                  className="border border-gray-300 rounded-md px-3 py-3"
-                />
-              </View>
-
-              <View>
-                <Text className="text-slate-700 font-semibold mb-1">
-                  Vehicle Type <Text className="text-red-500">*</Text>
-                </Text>
-                <View className="border border-gray-300 rounded-md overflow-hidden">
-                  <Picker
-                    selectedValue={vehicleData.vehicleType}
-                    onValueChange={(v) =>
-                      setVehicleData((p) => ({ ...p, vehicleType: String(v) }))
-                    }
-                  >
-                    <Picker.Item label="Select Vehicle Type" value="" />
-                    <Picker.Item label="Car" value="Car" />
-                    <Picker.Item label="Van" value="Van" />
-                    <Picker.Item label="Lorry" value="Lorry" />
-                    <Picker.Item label="Motorcycle" value="Motorcycle" />
-                    <Picker.Item label="Other" value="Other" />
-                  </Picker>
-                </View>
-              </View>
-
-              <View>
-                <Text className="text-slate-700 font-semibold mb-1">
-                  Status
-                </Text>
-                <View className="border border-gray-300 rounded-md overflow-hidden">
-                  <Picker
-                    selectedValue={vehicleData.status}
-                    onValueChange={(v) =>
-                      setVehicleData((p) => ({ ...p, status: String(v) }))
-                    }
-                  >
-                    <Picker.Item label="Select Status" value="" />
-                    <Picker.Item label="Stolen" value="Stolen" />
-                    <Picker.Item label="Found" value="Found" />
-                  </Picker>
-                </View>
-              </View>
-
-              <View className="flex-row items-center justify-between border border-gray-300 rounded-md px-3 py-3">
-                <Text className="text-slate-700 font-semibold">Lost Date</Text>
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-slate-600">
-                    {vehicleData.lostDate || "—"}
-                  </Text>
-                  <Pressable
-                    className="bg-slate-700 px-3 py-2 rounded-md"
-                    onPress={() => setShowLostDatePickerAdd(true)}
-                  >
-                    <Text className="text-white font-bold">Pick</Text>
-                  </Pressable>
-                  <Pressable
-                    className="bg-gray-500 px-3 py-2 rounded-md"
-                    onPress={() =>
-                      setVehicleData((p) => ({ ...p, lostDate: "" }))
-                    }
-                  >
-                    <Text className="text-white font-bold">Clear</Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              {showLostDatePickerAdd && (
-                <DateTimePicker
-                  value={
-                    vehicleData.lostDate
-                      ? new Date(vehicleData.lostDate)
-                      : new Date()
-                  }
-                  mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(_, date) => {
-                    setShowLostDatePickerAdd(false);
-                    if (date)
-                      setVehicleData((p) => ({
-                        ...p,
-                        lostDate: toYYYYMMDD(date),
-                      }));
-                  }}
-                />
-              )}
-            </View>
-
-            <View className="flex-row gap-3 mt-6">
-              <Pressable
-                className={`flex-1 rounded-md py-3 ${loading ? "bg-gray-400" : "bg-blue-500"}`}
-                onPress={handleAddVehicle}
-                disabled={loading}
-              >
-                <Text className="text-white font-bold text-center">
-                  {loading ? "Saving..." : "Save Vehicle"}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                className="flex-1 rounded-md py-3 bg-gray-500"
-                onPress={() => {
-                  setShowAddModal(false);
-                  setError(null);
-                  setVehicleData({
-                    numberPlate: "",
-                    ownerName: "",
-                    vehicleType: "",
-                    status: "",
-                    lostDate: "",
-                  });
-                }}
-                disabled={loading}
-              >
-                <Text className="text-white font-bold text-center">Cancel</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* EDIT MODAL */}
-      <Modal visible={showEditModal} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 items-center justify-center p-4">
-          <View className="bg-white w-full rounded-xl p-5">
-            <Text className="text-xl font-extrabold text-slate-800">
-              Edit Vehicle
-            </Text>
-
-            <View className="mt-4 space-y-3">
-              <View>
-                <Text className="text-slate-700 font-semibold mb-1">
-                  Number Plate <Text className="text-red-500">*</Text>
-                </Text>
-                <TextInput
-                  value={editingVehicle?.numberPlate ?? ""}
-                  onChangeText={(t) =>
-                    setEditingVehicle((p) => (p ? { ...p, numberPlate: t } : p))
-                  }
-                  className="border border-gray-300 rounded-md px-3 py-3"
-                />
-              </View>
-
-              <View>
-                <Text className="text-slate-700 font-semibold mb-1">
-                  Owner Name <Text className="text-red-500">*</Text>
-                </Text>
-                <TextInput
-                  value={editingVehicle?.ownerName ?? ""}
-                  onChangeText={(t) =>
-                    setEditingVehicle((p) => (p ? { ...p, ownerName: t } : p))
-                  }
-                  className="border border-gray-300 rounded-md px-3 py-3"
-                />
-              </View>
-
-              <View>
-                <Text className="text-slate-700 font-semibold mb-1">
-                  Vehicle Type <Text className="text-red-500">*</Text>
-                </Text>
-                <View className="border border-gray-300 rounded-md overflow-hidden">
-                  <Picker
-                    selectedValue={editingVehicle?.vehicleType ?? ""}
-                    onValueChange={(v) =>
-                      setEditingVehicle((p) =>
-                        p ? { ...p, vehicleType: String(v) } : p,
-                      )
-                    }
-                  >
-                    <Picker.Item label="Select Type" value="" />
-                    <Picker.Item label="Car" value="Car" />
-                    <Picker.Item label="Van" value="Van" />
-                    <Picker.Item label="Lorry" value="Lorry" />
-                    <Picker.Item label="Motorcycle" value="Motorcycle" />
-                    <Picker.Item label="Other" value="Other" />
-                  </Picker>
-                </View>
-              </View>
-
-              <View>
-                <Text className="text-slate-700 font-semibold mb-1">
-                  Status
-                </Text>
-                <View className="border border-gray-300 rounded-md overflow-hidden">
-                  <Picker
-                    selectedValue={editingVehicle?.status ?? ""}
-                    onValueChange={(v) =>
-                      setEditingVehicle((p) =>
-                        p ? { ...p, status: String(v) } : p,
-                      )
-                    }
-                  >
-                    <Picker.Item label="Select Status" value="" />
-                    <Picker.Item label="Stolen" value="Stolen" />
-                    <Picker.Item label="Found" value="Found" />
-                  </Picker>
-                </View>
-              </View>
-
-              <View className="flex-row items-center justify-between border border-gray-300 rounded-md px-3 py-3">
-                <Text className="text-slate-700 font-semibold">Lost Date</Text>
-                <View className="flex-row items-center gap-2">
-                  <Text className="text-slate-600">
-                    {editingVehicle?.lostDate || "—"}
-                  </Text>
-                  <Pressable
-                    className="bg-slate-700 px-3 py-2 rounded-md"
-                    onPress={() => setShowLostDatePickerEdit(true)}
-                  >
-                    <Text className="text-white font-bold">Pick</Text>
-                  </Pressable>
-                  <Pressable
-                    className="bg-gray-500 px-3 py-2 rounded-md"
-                    onPress={() =>
-                      setEditingVehicle((p) => (p ? { ...p, lostDate: "" } : p))
-                    }
-                  >
-                    <Text className="text-white font-bold">Clear</Text>
-                  </Pressable>
-                </View>
-              </View>
-
-              {showLostDatePickerEdit && (
-                <DateTimePicker
-                  value={
-                    editingVehicle?.lostDate
-                      ? new Date(editingVehicle.lostDate)
-                      : new Date()
-                  }
-                  mode="date"
-                  display={Platform.OS === "ios" ? "spinner" : "default"}
-                  onChange={(_, date) => {
-                    setShowLostDatePickerEdit(false);
-                    if (date) {
-                      setEditingVehicle((p) =>
-                        p ? { ...p, lostDate: toYYYYMMDD(date) } : p,
-                      );
-                    }
-                  }}
-                />
-              )}
-            </View>
-
-            <View className="flex-row gap-3 mt-6">
-              <Pressable
-                className={`flex-1 rounded-md py-3 ${loading ? "bg-gray-400" : "bg-blue-500"}`}
-                onPress={handleUpdateVehicle}
-                disabled={loading}
-              >
-                <Text className="text-white font-bold text-center">
-                  {loading ? "Updating..." : "Update Vehicle"}
-                </Text>
-              </Pressable>
-
-              <Pressable
-                className="flex-1 rounded-md py-3 bg-gray-500"
-                onPress={() => {
-                  setShowEditModal(false);
-                  setEditingVehicle(null);
-                  setError(null);
-                }}
-                disabled={loading}
-              >
-                <Text className="text-white font-bold text-center">Cancel</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

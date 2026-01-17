@@ -22,7 +22,7 @@ type VehicleForm = {
   ownerName: string;
   vehicleType: string;
   status: string;
-  lostDate: string; // YYYY-MM-DD
+  lostDate: string; 
 };
 
 const VEHICLE_TYPES = [
@@ -73,6 +73,7 @@ export default function PlateRegistryScreen() {
   const [showLostDatePickerFilter, setShowLostDatePickerFilter] =
     useState(false);
   const [showLostDatePickerEdit, setShowLostDatePickerEdit] = useState(false);
+
 
   useEffect(() => {
     fetchVehicles();
@@ -209,38 +210,14 @@ export default function PlateRegistryScreen() {
     }
   };
 
-  const handleDeleteVehicle = (id?: number) => {
-    if (!id) return;
-
-    Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this vehicle?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await axios.delete(`${API_BASE_URL}/api/vehicles/${id}`);
-              setVehicles((prev) => prev.filter((v) => v.id !== id));
-              Alert.alert("Deleted", "Vehicle deleted successfully!");
-            } catch {
-              Alert.alert("Error", "Failed to delete vehicle");
-            }
-          },
-        },
-      ],
-    );
-  };
+  
 
   return (
     <SafeAreaView className="flex-1 bg-slate-500">
-      {/* Header */}
+    
       <View className="bg-slate-800 p-4 mt-10">
         <Text className="text-white text-2xl font-bold">Plate Registry</Text>
 
-        {/* Search */}
         <View className="mt-4">
           <TextInput
             placeholder="Search by plate or owner name"
@@ -252,7 +229,6 @@ export default function PlateRegistryScreen() {
         </View>
 
         <View className="flex-row gap-2 mt-4">
-          {/* Status Filter */}
           <View className="flex-1 bg-slate-200 rounded-lg overflow-hidden ">
             <Picker
               selectedValue={statusFilter}
@@ -288,23 +264,23 @@ export default function PlateRegistryScreen() {
         {/* Lost Date Filter */}
         <View className="flex-row items-center justify-between bg-white rounded-md px-3 py-3 mt-4">
           <Text className="text-slate-700 font-semibold">Lost Date</Text>
-          <View className="flex-row items-center gap-2">
-            <Text className="text-slate-600">{selectedDate || ""}</Text>
+            <View className="flex-row items-center gap-2">
+              <Text className="text-slate-600">{selectedDate || ""}</Text>
 
-            <Pressable
-              className="bg-slate-700 px-3 py-2 rounded-md"
-              onPress={() => setShowLostDatePickerFilter(true)}
-            >
-              <Text className="text-white font-semibold">Pick</Text>
-            </Pressable>
+              <Pressable
+                className="bg-slate-700 px-3 py-2 rounded-md"
+                onPress={() => setShowLostDatePickerFilter(true)}
+              >
+                <Text className="text-white font-semibold">Pick</Text>
+              </Pressable>
 
-            <Pressable
-              className="bg-gray-500 px-3 py-2 rounded-md"
-              onPress={() => setSelectedDate("")}
-            >
-              <Text className="text-white font-semibold">Clear</Text>
-            </Pressable>
-          </View>
+              <Pressable
+                className="bg-gray-500 px-3 py-2 rounded-md"
+                onPress={() => setSelectedDate("")}
+              >
+                <Text className="text-white font-semibold">Clear</Text>
+              </Pressable>
+            </View>
         </View>
 
         {showLostDatePickerFilter && (
@@ -330,14 +306,16 @@ export default function PlateRegistryScreen() {
           </Pressable>
         </View>
 
-        <Pressable
-          className="rounded-md px-4 py-3 bg-orange-500"
-          onPress={clearAllFilters}
-        >
-          <Text className="text-white font-bold text-center">
-            Clear All Filters
-          </Text>
-        </Pressable>
+        <View className="mt-4">
+          <Pressable
+            className="rounded-md px-4 py-3 bg-orange-500"
+            onPress={clearAllFilters}
+          >
+            <Text className="text-white font-bold text-center">
+              Clear All Filters
+            </Text>
+          </Pressable>
+        </View>
 
         {!!error && (
           <View className="bg-red-500 rounded-md p-3 flex-row items-start justify-between">

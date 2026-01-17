@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getAccessToken } from "../auth/auth";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+export const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 if (!API_BASE_URL) {
   throw new Error("API base URL is not defined in environment variables");

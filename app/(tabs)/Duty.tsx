@@ -1,4 +1,3 @@
-// app/(field)/duty-calendar.tsx  (or wherever your screen lives)
 import { Bell, ChevronLeft, Clock, MapPin } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -88,7 +87,7 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
 
   const todayKey = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-  // ✅ Get officerId from route OR stored auth user
+  // Get officerId from route OR stored auth user
   useEffect(() => {
     let mounted = true;
 
@@ -254,7 +253,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-slate-900">
-      {/* Header */}
       <View className="flex-row items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3">
         <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
           <ChevronLeft size={28} color="#fff" />
@@ -268,7 +266,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
       </View>
 
       <ScrollView className="flex-1">
-        {/* Calendar */}
         <View className="bg-slate-900 px-2 pb-4">
           <Calendar
             current={selectedDate || todayKey}
@@ -290,14 +287,12 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
           />
         </View>
 
-        {/* Error banner */}
         {error && (
           <View className="mx-4 mt-3 rounded-lg bg-red-900 px-4 py-3">
             <Text className="text-xs text-red-100">{error}</Text>
           </View>
         )}
 
-        {/* Details */}
         <View className="px-4 pt-4 pb-8">
           <Text className="mb-3 text-base font-semibold text-white">
             {selectedDate

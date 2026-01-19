@@ -1,5 +1,3 @@
-// src/types/duty.ts
-
 export type DutyAssignment = {
   id: number;
   officerId: string;

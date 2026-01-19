@@ -1,27 +1,23 @@
-// screens/DutyCalendarScreen.tsx
+// app/(field)/duty-calendar.tsx  (or wherever your screen lives)
 import { Bell, ChevronLeft, Clock, MapPin } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
   ScrollView,
-  StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { getOfficerDuties, getOfficerDutiesByDate } from "../../src/services/dutyService";
-import type { DutyAssignment, DutyDetail } from "../../src/types/duty";
 
-// ✅ USE THIS (your project already has this + web safe storage)
 import { getUser } from "../../src/auth/auth";
-
-interface DutyCalendarScreenProps {
-  navigation: any;
-  route: any;
-}
+import {
+  getOfficerDuties,
+  getOfficerDutiesByDate,
+} from "../../src/services/dutyService";
+import type { DutyAssignment, DutyDetail } from "../../src/types/duty";
 
 type MarkedDates = Record<
   string,
@@ -33,7 +29,12 @@ type MarkedDates = Record<
   }
 >;
 
-export default function DutyCalendarScreen({ navigation, route }: DutyCalendarScreenProps) {
+type Props = {
+  navigation: any;
+  route: any;
+};
+
+export default function DutyCalendarScreen({ navigation, route }: Props) {
   const [officerId, setOfficerId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});
@@ -69,23 +70,25 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
     }
   };
 
-  const getStatusColor = (status?: string) => {
+  const statusBadgeClass = (status?: string) => {
     const s = normalizeStatus(status);
     switch (s) {
       case "Assigned":
-        return styles.statusActive;
+        return "bg-blue-500";
       case "Completed":
-        return styles.statusCompleted;
+        return "bg-emerald-500";
       case "Pending":
-        return styles.statusPending;
+        return "bg-amber-500";
       case "Absent":
-        return styles.statusAbsent;
+        return "bg-red-500";
       default:
-        return styles.statusDefault;
+        return "bg-gray-500";
     }
   };
 
-  // ✅ Get officerId from route OR stored auth user (works on web too)
+  const todayKey = useMemo(() => new Date().toISOString().split("T")[0], []);
+
+  // ✅ Get officerId from route OR stored auth user
   useEffect(() => {
     let mounted = true;
 
@@ -97,7 +100,7 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
           return;
         }
 
-        const user = await getUser(); // ✅ from src/auth/auth.ts
+        const user = await getUser();
         const id = user?.id ?? user?.userId ?? user?.officerId;
         if (id && mounted) setOfficerId(String(id));
       } catch (e) {
@@ -124,7 +127,10 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, officerId]);
 
-  const buildMarkedDates = (data: DutyAssignment[], keepSelectedDate?: string) => {
+  const buildMarkedDates = (
+    data: DutyAssignment[],
+    keepSelectedDate?: string,
+  ) => {
     const marked: MarkedDates = {};
 
     for (const d of data) {
@@ -133,15 +139,13 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
 
       const dot = { key: String(d.id), color: getDotColor(d.status) };
 
-      if (!marked[dateKey]) {
-        marked[dateKey] = { marked: true, dots: [dot] };
-      } else {
+      if (!marked[dateKey]) marked[dateKey] = { marked: true, dots: [dot] };
+      else
         marked[dateKey] = {
           ...marked[dateKey],
           marked: true,
           dots: [...(marked[dateKey].dots ?? []), dot],
         };
-      }
     }
 
     if (keepSelectedDate) {
@@ -163,9 +167,7 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
       const data = await getOfficerDuties(officerId);
       setDuties(data);
 
-      const today = new Date().toISOString().split("T")[0];
-      const dateToSelect = selectedDate || today;
-
+      const dateToSelect = selectedDate || todayKey;
       setMarkedDates(buildMarkedDates(data, dateToSelect));
       if (!selectedDate) setSelectedDate(dateToSelect);
     } catch (e: any) {
@@ -184,13 +186,16 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
     try {
       setLoading(true);
       setError(null);
+
       const details = await getOfficerDutiesByDate(officerId, date);
-      setDutyDetails(details.map((d) => ({ ...d, status: normalizeStatus(d.status) })));
+      setDutyDetails(
+        details.map((d) => ({ ...d, status: normalizeStatus(d.status) })),
+      );
     } catch (e: any) {
-      const msg =
-        e?.response?.status === 403
-          ? "Access denied. Check backend auth / CORS."
-          : "Failed to load duty details.";
+      const ms;
+      e?.response?.status === 403
+        ? "Access denied. Check backend auth / CORS."
+        : "Failed to load duty details.";
       setError(msg);
       setDutyDetails([]);
     } finally {
@@ -198,7 +203,7 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
     }
   };
 
-  const onDayPress = (day: any) => {
+  const onDayPress = (day: { dateString: string }) => {
     const date = day.dateString;
     setSelectedDate(date);
 
@@ -207,19 +212,28 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
       newMarked[k] = { ...(newMarked[k] ?? {}), selected: false };
     });
 
-    newMarked[date] = { ...(newMarked[date] ?? {}), selected: true, selectedColor: "#1E293B" };
+    newMarked[date] = {
+      ...(newMarked[date] ?? {}),
+      selected: true,
+      selectedColor: "#1E293B",
+    };
+
     setMarkedDates(newMarked);
   };
 
   const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
 
   if (initialLoading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
+      <SafeAreaView className="flex-1 bg-slate-900">
+        <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#3B82F6" />
-          <Text style={styles.loadingText}>Loading duties...</Text>
+          <Text className="mt-4 text-white">Loading duties...</Text>
         </View>
       </SafeAreaView>
     );
@@ -227,10 +241,11 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
 
   if (!officerId) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.centerContent}>
-          <Text style={styles.errorText}>
-            Officer ID not found. Login again or pass officerId in navigation params.
+      <SafeAreaView className="flex-1 bg-slate-900">
+        <View className="flex-1 items-center justify-center px-8">
+          <Text className="text-center text-base text-red-500">
+            Officer ID not found. Login again or pass officerId in navigation
+            params.
           </Text>
         </View>
       </SafeAreaView>
@@ -238,21 +253,27 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+    <SafeAreaView className="flex-1 bg-slate-900">
+      {/* Header */}
+      <View className="flex-row items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3">
+        <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
           <ChevronLeft size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Duty Calendar</Text>
-        <TouchableOpacity>
+
+        <Text className="text-lg font-semibold text-white mt-20">
+          Duty Calendar
+        </Text>
+
+        <TouchableOpacity className="p-1">
           <Bell size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.calendarContainer}>
+      <ScrollView className="flex-1">
+        {/* Calendar */}
+        <View className="bg-slate-900 px-2 pb-4">
           <Calendar
-            current={selectedDate || new Date().toISOString().split("T")[0]}
+            current={selectedDate || todayKey}
             onDayPress={onDayPress}
             markedDates={markedDates}
             markingType="multi-dot"
@@ -271,53 +292,70 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
           />
         </View>
 
+        {/* Error banner */}
         {error && (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerText}>{error}</Text>
+          <View className="mx-4 mt-3 rounded-lg bg-red-900 px-4 py-3">
+            <Text className="text-xs text-red-100">{error}</Text>
           </View>
         )}
 
-        <View style={styles.detailsSection}>
-          <Text style={styles.detailsTitle}>
-            {selectedDate ? `Duty Details - ${formatDate(selectedDate)}` : "Select a date to view duties"}
+        {/* Details */}
+        <View className="px-4 pt-4 pb-8">
+          <Text className="mb-3 text-base font-semibold text-white">
+            {selectedDate
+              ? `Duty Details - ${formatDate(selectedDate)}`
+              : "Select a date to view duties"}
           </Text>
 
           {loading ? (
-            <View style={styles.loadingContainer}>
+            <View className="py-8 items-center">
               <ActivityIndicator size="large" color="#3B82F6" />
             </View>
           ) : dutyDetails.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No duties assigned for this date</Text>
+            <View className="mb-4 rounded-lg bg-slate-800 p-4">
+              <Text className="text-center text-gray-400">
+                No duties assigned for this date
+              </Text>
             </View>
           ) : (
             dutyDetails.map((duty) => (
-              <View key={duty.id} style={styles.dutyCardWrapper}>
-                <View style={styles.dutyCard}>
-                  <View style={styles.dutyHeader}>
-                    <View style={styles.dutyHeaderLeft}>
-                      <Text style={styles.dutyTitle}>
+              <View key={String(duty.id)} className="mb-4">
+                <View className="rounded-lg bg-slate-800 p-4">
+                  <View className="mb-3 flex-row items-start justify-between">
+                    <View className="flex-1 pr-3">
+                      <Text className="mb-1 text-base font-semibold text-white">
                         {duty.taskType} - {duty.location}
                       </Text>
-                      <View style={styles.dutyTime}>
+
+                      <View className="flex-row items-center">
                         <Clock size={14} color="#94A3B8" />
-                        <Text style={styles.dutyTimeText}>{duty.timeRange}</Text>
+                        <Text className="ml-1 text-sm text-gray-400">
+                          {duty.timeRange}
+                        </Text>
                       </View>
                     </View>
 
-                    <View style={[styles.statusBadge, getStatusColor(duty.status)]}>
-                      <Text style={styles.statusText}>{String(duty.status).toUpperCase()}</Text>
+                    <View
+                      className={`rounded-full px-3 py-1 ${statusBadgeClass(duty.status)}`}
+                    >
+                      <Text className="text-[10px] font-medium text-white">
+                        {String(duty.status).toUpperCase()}
+                      </Text>
                     </View>
                   </View>
 
-                  <View style={styles.dutyInfo}>
+                  <View className="mb-2 flex-row items-center">
                     <MapPin size={14} color="#94A3B8" />
-                    <Text style={styles.dutyInfoText}>{duty.location}</Text>
+                    <Text className="ml-1 text-sm text-gray-300">
+                      {duty.location}
+                    </Text>
                   </View>
 
                   {!!duty.description && (
-                    <View style={styles.descriptionBox}>
-                      <Text style={styles.descriptionText}>{duty.description}</Text>
+                    <View className="mt-2 rounded bg-slate-700 p-2">
+                      <Text className="text-xs text-gray-200">
+                        {duty.description}
+                      </Text>
                     </View>
                   )}
                 </View>
@@ -329,68 +367,3 @@ export default function DutyCalendarScreen({ navigation, route }: DutyCalendarSc
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0F172A" },
-  centerContent: { flex: 1, justifyContent: "center", alignItems: "center" },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#0F172A",
-    borderBottomWidth: 1,
-    borderBottomColor: "#1E293B",
-  },
-  headerTitle: { color: "#fff", fontSize: 18, fontWeight: "600" },
-
-  scrollView: { flex: 1 },
-  calendarContainer: { backgroundColor: "#0F172A", paddingHorizontal: 8, paddingBottom: 16 },
-
-  errorBanner: {
-    backgroundColor: "#991B1B",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    marginTop: 12,
-    borderRadius: 8,
-  },
-  errorBannerText: { color: "#FEE2E2", fontSize: 12 },
-
-  detailsSection: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 32 },
-  detailsTitle: { color: "#fff", fontSize: 16, fontWeight: "600", marginBottom: 12 },
-
-  loadingContainer: { paddingVertical: 32, alignItems: "center" },
-  loadingText: { color: "#fff", marginTop: 16 },
-
-  emptyCard: { backgroundColor: "#1E293B", borderRadius: 8, padding: 16, marginBottom: 16 },
-  emptyText: { color: "#9CA3AF", textAlign: "center" },
-
-  dutyCardWrapper: { marginBottom: 16 },
-  dutyCard: { backgroundColor: "#1E293B", borderRadius: 8, padding: 16 },
-
-  dutyHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 },
-  dutyHeaderLeft: { flex: 1 },
-  dutyTitle: { color: "#fff", fontSize: 16, fontWeight: "600", marginBottom: 4 },
-
-  dutyTime: { flexDirection: "row", alignItems: "center" },
-  dutyTimeText: { color: "#9CA3AF", fontSize: 14, marginLeft: 4 },
-
-  statusBadge: { borderRadius: 9999, paddingHorizontal: 12, paddingVertical: 4 },
-  statusActive: { backgroundColor: "#3B82F6" },
-  statusCompleted: { backgroundColor: "#10B981" },
-  statusPending: { backgroundColor: "#F59E0B" },
-  statusAbsent: { backgroundColor: "#EF4444" },
-  statusDefault: { backgroundColor: "#6B7280" },
-  statusText: { color: "#fff", fontSize: 10, fontWeight: "500" },
-
-  dutyInfo: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
-  dutyInfoText: { color: "#D1D5DB", fontSize: 14, marginLeft: 4 },
-
-  descriptionBox: { backgroundColor: "#334155", borderRadius: 4, padding: 8, marginTop: 8 },
-  descriptionText: { color: "#D1D5DB", fontSize: 12 },
-
-  errorText: { color: "#EF4444", fontSize: 16, textAlign: "center", paddingHorizontal: 32 },
-});

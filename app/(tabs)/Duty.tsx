@@ -192,10 +192,10 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
         details.map((d) => ({ ...d, status: normalizeStatus(d.status) })),
       );
     } catch (e: any) {
-      const ms;
-      e?.response?.status === 403
-        ? "Access denied. Check backend auth / CORS."
-        : "Failed to load duty details.";
+      const msg =
+        e?.response?.status === 403
+          ? "Access denied. Check backend auth / CORS."
+          : "Failed to load duty details.";
       setError(msg);
       setDutyDetails([]);
     } finally {

@@ -9,9 +9,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "../src/hooks/useAuth";
-
-const Logo = require("../assets/images/logo.png");
-const bgImage = require("../assets/images/bgImage.png");
+import { images } from "@/src/constants/images";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -38,7 +36,7 @@ export default function LoginScreen() {
 
   return (
     <ImageBackground
-      source={bgImage}
+      source={images.bg}
       resizeMode="contain"
       style={{ flex: 1, backgroundColor: "#0B1220" }}
     >

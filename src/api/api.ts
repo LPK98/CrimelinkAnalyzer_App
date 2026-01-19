@@ -9,7 +9,7 @@ if (!API_BASE_URL) {
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 20000,
+  timeout: 200000,
 });
 
 api.interceptors.request.use(async (config) => {

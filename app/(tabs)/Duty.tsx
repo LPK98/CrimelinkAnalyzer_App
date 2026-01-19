@@ -260,9 +260,7 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
           <ChevronLeft size={28} color="#fff" />
         </TouchableOpacity>
 
-        <Text className="text-lg font-semibold text-white mt-20">
-          Duty Calendar
-        </Text>
+        <Text className="text-lg font-semibold text-white">Duty Calendar</Text>
 
         <TouchableOpacity className="p-1">
           <Bell size={24} color="#fff" />

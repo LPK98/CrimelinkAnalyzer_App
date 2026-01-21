@@ -53,7 +53,7 @@ const Dashboard = () => {
     { name: "Weapon Management", route: "/(tabs)/Weapon", icon: icons.weapon },
     { name: "Number Plates", route: "/(tabs)/Plate", icon: icons.numberPlate },
     { name: "Duty Management", route: "/(tabs)/Duty", icon: icons.duty },
-    { name: "Safety Zone", route: "/Dashboard", icon: icons.safetyZone },
+    { name: "Safety Zone", route: "/SafetyZone", icon: icons.safetyZone },
     { name: "Schedule", route: "/Dashboard", icon: icons.schedule },
     { name: "Messages", route: "/Dashboard", icon: icons.message },
   ];

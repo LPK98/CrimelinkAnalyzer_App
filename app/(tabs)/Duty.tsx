@@ -1,22 +1,26 @@
-import { Bell, ChevronLeft, Clock, MapPin } from "lucide-react-native";
+import { Bell, ChevronLeft, Clock, MapPin, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   SafeAreaView,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
-import { Calendar } from "react-native-calendars";
+import { Calendar, Calendar as RNCalendar } from "react-native-calendars";
 
 import { getUser } from "../../src/auth/auth";
 import {
   getOfficerDuties,
   getOfficerDutiesByDate,
 } from "../../src/services/dutyService";
+import * as leaveService from "../../src/services/leaveService";
 import type { DutyAssignment, DutyDetail } from "../../src/types/duty";
+import type { LeaveRequest } from "../../src/types/leave";
 
 type MarkedDates = Record<
   string,
@@ -25,6 +29,7 @@ type MarkedDates = Record<
     dots?: { key: string; color: string }[];
     selected?: boolean;
     selectedColor?: string;
+    dotColor?: string;
   }
 >;
 
@@ -43,7 +48,18 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const normalizeStatus = (status?: string) => {
+  // ✅ Leaves (no dots on calendar, and no leave details in duty details section)
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [loadingLeaves, setLoadingLeaves] = useState(false);
+
+  // Leave Request Modal States
+  const [leaveModalVisible, setLeaveModalVisible] = useState(false);
+  const [leaveSelectedDate, setLeaveSelectedDate] = useState<string>("");
+  const [leaveReason, setLeaveReason] = useState<string>("");
+  const [submittingLeave, setSubmittingLeave] = useState(false);
+
+  // ---------------- Duty helpers ----------------
+  const normalizeDutyStatus = (status?: string) => {
     if (!status) return "Pending";
     const s = String(status).toUpperCase();
     if (s === "ACTIVE" || s === "ASSIGNED") return "Assigned";
@@ -53,8 +69,8 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     return status;
   };
 
-  const getDotColor = (status?: string) => {
-    const s = normalizeStatus(status);
+  const getDutyDotColor = (status?: string) => {
+    const s = normalizeDutyStatus(status);
     switch (s) {
       case "Assigned":
         return "#3B82F6";
@@ -69,8 +85,8 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     }
   };
 
-  const statusBadgeClass = (status?: string) => {
-    const s = normalizeStatus(status);
+  const dutyBadgeClass = (status?: string) => {
+    const s = normalizeDutyStatus(status);
     switch (s) {
       case "Assigned":
         return "bg-blue-500";
@@ -85,9 +101,17 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     }
   };
 
+  // ---------------- Leave helpers ----------------
+  const leaveBadgeClass = (status?: string) => {
+    const s = String(status || "PENDING").toUpperCase();
+    if (s === "APPROVED") return "bg-emerald-600";
+    if (s === "DENIED") return "bg-red-600";
+    return "bg-amber-600"; // PENDING
+  };
+
   const todayKey = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-  // Get officerId from route OR stored auth user
+  // ---------------- Load officerId ----------------
   useEffect(() => {
     let mounted = true;
 
@@ -117,6 +141,7 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
   useEffect(() => {
     if (!officerId) return;
     loadMonthDuties();
+    loadMyLeaves();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [officerId]);
 
@@ -126,6 +151,7 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, officerId]);
 
+  // ✅ ONLY duty dots
   const buildMarkedDates = (
     data: DutyAssignment[],
     keepSelectedDate?: string,
@@ -136,15 +162,19 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
       const dateKey = d.date;
       if (!dateKey) continue;
 
-      const dot = { key: String(d.id), color: getDotColor(d.status) };
+      const dot = {
+        key: `duty-${String(d.id)}`,
+        color: getDutyDotColor(d.status),
+      };
 
       if (!marked[dateKey]) marked[dateKey] = { marked: true, dots: [dot] };
-      else
+      else {
         marked[dateKey] = {
           ...marked[dateKey],
           marked: true,
           dots: [...(marked[dateKey].dots ?? []), dot],
         };
+      }
     }
 
     if (keepSelectedDate) {
@@ -167,7 +197,10 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
       setDuties(data);
 
       const dateToSelect = selectedDate || todayKey;
+
+      // ✅ build calendar marks only from duties
       setMarkedDates(buildMarkedDates(data, dateToSelect));
+
       if (!selectedDate) setSelectedDate(dateToSelect);
     } catch (e: any) {
       const msg =
@@ -188,7 +221,7 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
 
       const details = await getOfficerDutiesByDate(officerId, date);
       setDutyDetails(
-        details.map((d) => ({ ...d, status: normalizeStatus(d.status) })),
+        details.map((d) => ({ ...d, status: normalizeDutyStatus(d.status) })),
       );
     } catch (e: any) {
       const msg =
@@ -199,6 +232,18 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
       setDutyDetails([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMyLeaves = async () => {
+    try {
+      setLoadingLeaves(true);
+      const data = await leaveService.getOfficerLeaves(String(officerId));
+      setLeaveRequests(data);
+    } catch (e) {
+      console.log("Failed to load leave requests:", e);
+    } finally {
+      setLoadingLeaves(false);
     }
   };
 
@@ -226,6 +271,63 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
       day: "numeric",
       year: "numeric",
     });
+
+  // Leave Request Functions
+  const handleOpenLeaveModal = () => {
+    setLeaveModalVisible(true);
+    setLeaveSelectedDate("");
+    setLeaveReason("");
+  };
+
+  const handleLeaveDateSelect = (day: { dateString: string }) => {
+    setLeaveSelectedDate(day.dateString);
+  };
+
+  const handleSubmitLeaveRequest = async () => {
+    if (!leaveSelectedDate) {
+      Alert.alert("Error", "Please select a date");
+      return;
+    }
+
+    if (!leaveReason.trim()) {
+      Alert.alert("Error", "Please provide a reason for leave");
+      return;
+    }
+
+    // Check if date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDateObj = new Date(leaveSelectedDate);
+    if (selectedDateObj < today) {
+      Alert.alert("Error", "Cannot request leave for past dates");
+      return;
+    }
+
+    try {
+      setSubmittingLeave(true);
+
+      await leaveService.submitLeaveRequest({
+        officerId: String(officerId),
+        date: leaveSelectedDate,
+        reason: leaveReason.trim(),
+      });
+
+      Alert.alert("Success", "Leave request submitted successfully");
+      setLeaveModalVisible(false);
+      setLeaveSelectedDate("");
+      setLeaveReason("");
+
+      // Reload duties and leave list (calendar remains duty dots only)
+      await loadMonthDuties();
+      await loadMyLeaves();
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.message || "Failed to submit leave request";
+      Alert.alert("Error", msg);
+    } finally {
+      setSubmittingLeave(false);
+    }
+  };
 
   if (initialLoading) {
     return (
@@ -293,7 +395,8 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        <View className="px-4 pt-4 pb-8">
+        {/* ✅ Duty details ONLY (no leave details here) */}
+        <View className="px-4 pt-4 pb-4">
           <Text className="mb-3 text-base font-semibold text-white">
             {selectedDate
               ? `Duty Details - ${formatDate(selectedDate)}`
@@ -329,7 +432,7 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
                     </View>
 
                     <View
-                      className={`rounded-full px-3 py-1 ${statusBadgeClass(duty.status)}`}
+                      className={`rounded-full px-3 py-1 ${dutyBadgeClass(duty.status)}`}
                     >
                       <Text className="text-[10px] font-medium text-white">
                         {String(duty.status).toUpperCase()}
@@ -356,7 +459,155 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
             ))
           )}
         </View>
+
+        {/* ✅ My Leave Requests List */}
+        <View className="px-4 pb-6">
+          <Text className="mb-3 text-base font-semibold text-white">
+            My Leave Requests
+          </Text>
+
+          {loadingLeaves ? (
+            <View className="items-center py-4">
+              <ActivityIndicator size="small" color="#F59E0B" />
+            </View>
+          ) : leaveRequests.length === 0 ? (
+            <View className="rounded-lg bg-slate-800 p-4">
+              <Text className="text-center text-gray-400">
+                No leave requests yet
+              </Text>
+            </View>
+          ) : (
+            leaveRequests
+              .slice()
+              .sort((a, b) => (a.date < b.date ? 1 : -1))
+              .map((l) => (
+                <View
+                  key={String(l.id)}
+                  className="mb-3 rounded-lg bg-slate-800 p-4"
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-sm font-semibold text-white">
+                      {formatDate(l.date)}
+                    </Text>
+
+                    <View
+                      className={`rounded-full px-3 py-1 ${leaveBadgeClass(l.status)}`}
+                    >
+                      <Text className="text-[10px] font-medium text-white">
+                        {String(l.status).toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text className="mt-2 text-xs text-gray-300">
+                    Reason: {l.reason}
+                  </Text>
+
+                  {!!l.responseReason && (
+                    <Text className="mt-2 text-xs text-red-200">
+                      Response: {l.responseReason}
+                    </Text>
+                  )}
+                </View>
+              ))
+          )}
+        </View>
+
+        {/* Request Leave Button */}
+        <View className="px-4 pb-8">
+          <TouchableOpacity
+            onPress={handleOpenLeaveModal}
+            className="rounded-lg bg-amber-600 py-4 shadow-lg"
+          >
+            <Text className="text-center text-base font-semibold text-white">
+              Request Leave
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      {/* Leave Request Modal */}
+      <Modal
+        visible={leaveModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setLeaveModalVisible(false)}
+      >
+        <View className="flex-1 bg-black/50">
+          <View className="mt-auto rounded-t-3xl bg-slate-900 px-4 pt-6 pb-8">
+            <View className="mb-4 flex-row items-center justify-between">
+              <Text className="text-xl font-semibold text-white">
+                Request Leave
+              </Text>
+              <TouchableOpacity onPress={() => setLeaveModalVisible(false)}>
+                <X size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <View className="mb-4">
+              <RNCalendar
+                onDayPress={handleLeaveDateSelect}
+                markedDates={{
+                  [leaveSelectedDate]: {
+                    selected: true,
+                    selectedColor: "#F59E0B",
+                  },
+                }}
+                minDate={new Date().toISOString().split("T")[0]}
+                theme={{
+                  calendarBackground: "#0F172A",
+                  textSectionTitleColor: "#94A3B8",
+                  selectedDayBackgroundColor: "#F59E0B",
+                  selectedDayTextColor: "#fff",
+                  todayTextColor: "#3B82F6",
+                  dayTextColor: "#E2E8F0",
+                  textDisabledColor: "#475569",
+                  monthTextColor: "#fff",
+                  arrowColor: "#F59E0B",
+                }}
+              />
+            </View>
+
+            {leaveSelectedDate && (
+              <Text className="mb-2 text-sm text-gray-400">
+                Selected: {formatDate(leaveSelectedDate)}
+              </Text>
+            )}
+
+            <View className="mb-4">
+              <Text className="mb-2 text-sm font-medium text-white">
+                Reason for Leave
+              </Text>
+              <TextInput
+                className="rounded-lg bg-slate-800 px-4 py-3 text-white"
+                placeholder="Enter reason..."
+                placeholderTextColor="#6B7280"
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                value={leaveReason}
+                onChangeText={setLeaveReason}
+              />
+            </View>
+
+            <TouchableOpacity
+              onPress={handleSubmitLeaveRequest}
+              disabled={
+                submittingLeave || !leaveSelectedDate || !leaveReason.trim()
+              }
+              className={`rounded-lg py-4 ${
+                submittingLeave || !leaveSelectedDate || !leaveReason.trim()
+                  ? "bg-gray-600"
+                  : "bg-amber-600"
+              }`}
+            >
+              <Text className="text-center text-base font-semibold text-white">
+                {submittingLeave ? "Submitting..." : "Submit Request"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

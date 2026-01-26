@@ -1,4 +1,5 @@
 import TopSectionTemplate from "@/src/components/TopSectionTemplate";
+import OverlayButton from "@/src/components/UI/OverlayButton";
 import Searchbar from "@/src/components/UI/Searchbar";
 import { Button } from "@react-navigation/elements";
 import * as Location from "expo-location";
@@ -14,14 +15,16 @@ const SafetyZone = () => {
   const LATITUDE_DELTA = 0.05;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
+  const mapRef = React.useRef<MapView>(null);
   const [region, setRegion] = useState<Region | null>(null);
+  const [isFullScreen, setIsFullScreen] = useState(false);
 
   useEffect(() => {
     const loadLocation = async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
 
       if (status !== "granted") {
-        console.log("Permission to access location was denied");
+        console.log("Permission to access location was denied"); //OPTIONAL /FIX: handle permission denial or show alert
         return;
       }
 
@@ -40,6 +43,36 @@ const SafetyZone = () => {
     loadLocation();
   }, []);
 
+  const zoom = (direction: "in" | "out") => {
+    if (!region) return;
+
+    const zoomFactor = direction === "in" ? 0.5 : 2;
+
+    const newRegin: Region = {
+      ...region,
+      latitudeDelta: region.latitudeDelta * zoomFactor,
+      longitudeDelta: region.longitudeDelta * zoomFactor,
+    };
+    setRegion(newRegin);
+    mapRef.current?.animateToRegion(newRegin, 250);
+  };
+
+  const myLocation = async () => {
+    const location = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.High,
+    });
+
+    const nextRegion: Region = {
+      latitude: location.coords.latitude,
+      longitude: location.coords.longitude,
+      latitudeDelta: region?.latitudeDelta ?? LATITUDE_DELTA,
+      longitudeDelta: region?.longitudeDelta ?? LONGITUDE_DELTA,
+    };
+
+    setRegion(nextRegion);
+    mapRef.current?.animateToRegion(nextRegion, 350);
+  };
+
   if (!region) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -49,7 +82,7 @@ const SafetyZone = () => {
   }
 
   return (
-    <SafeAreaView>
+    <SafeAreaView style={{ flex: 1 }}>
       <TopSectionTemplate
         heading="Crime Link Analyzer"
         subHeading="Safety Zone Mapping"
@@ -62,21 +95,136 @@ const SafetyZone = () => {
         >
           Back
         </Button>
+        <View
+          style={{
+            flex: 1,
+            // height: Dimensions.get("window").height * 0.5, //REMOVE : this or flex:1
+            width: "100%",
+          }}
+        >
+          <Text
+            style={{
+              fontSize: 20,
+              color: "white",
+              fontWeight: "bold",
+              elevation: 11,
+            }}
+          >
+            Safety Zone Map
+          </Text>
+          <View
+            style={{
+              flex: 1,
+              margin: isFullScreen ? 0 : 10,
+              borderRadius: isFullScreen ? 0 : 20,
+              overflow: "hidden",
+            }}
+          >
+            <MapView
+              ref={mapRef}
+              style={{ flex: 1, height: "100%", width: "100%" }}
+              provider="google"
+              region={region}
+              onRegionChangeComplete={(region) => setRegion(region)}
+              showsUserLocation={true}
+              showsMyLocationButton={false}
+              // initialRegion={{
+              //   latitude: 5.948202,
+              //   longitude: 80.548086,
+              //   latitudeDelta: LATITUDE_DELTA,
+              //   longitudeDelta: LONGITUDE_DELTA,
+              // }} //REMOVE
+            />
+            {/* Overlay buttons */}
+            <View
+              style={{
+                position: "absolute",
+                top: 10,
+                right: 10,
+                gap: 10,
+                zIndex: 999,
+                elevation: 999,
+              }}
+              pointerEvents="box-none"
+            >
+              <OverlayButton
+                icon="fullscreen"
+                iconColor="#ffffff"
+                size={24}
+                onPress={() => setIsFullScreen((v) => !v)}
+              />
+              <OverlayButton icon="add" size={24} onPress={() => zoom("in")} />
+              <OverlayButton
+                icon="remove"
+                size={24}
+                onPress={() => zoom("out")}
+              />
+              <OverlayButton
+                icon="my-location"
+                size={24}
+                onPress={myLocation}
+              />
+            </View>
+          </View>
+        </View>
+        {/* Legend cards */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-around",
+            marginTop: 10,
+          }}
+        >
+          <View
+            style={{
+              borderRadius: 50,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              backgroundColor: "#103735",
+              borderColor: "#0F5849",
+              borderWidth: 3,
+            }}
+          >
+            <Text style={{ color: "#2EBD8B", fontWeight: 600 }}>Safe Zone</Text>
+          </View>
+          <View
+            style={{
+              borderRadius: 50,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              backgroundColor: "#373310",
+              borderColor: "#EAB308",
+              borderWidth: 3,
+            }}
+          >
+            <Text style={{ color: "#EAB308", fontWeight: 600 }}>Caution</Text>
+          </View>
+          <View
+            style={{
+              borderRadius: 50,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              backgroundColor: "#3F1F1F",
+              borderColor: "#641D1D",
+              borderWidth: 3,
+            }}
+          >
+            <Text style={{ color: "#FB3C3C", fontWeight: 600 }}>High Risk</Text>
+          </View>
+          <View
+            style={{
+              borderRadius: 50,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              backgroundColor: "#212937",
+              borderColor: "#323D4E",
+              borderWidth: 3,
+            }}
+          >
+            <Text style={{ color: "#93A2B7", fontWeight: 600 }}>No data</Text>
+          </View>
+        </View>
       </TopSectionTemplate>
-      <View>
-        <Text>Safety Zone Map</Text>
-        <MapView
-          style={{ height: "100%", width: "100%" }}
-          provider="google"
-          // initialRegion={{
-          //   latitude: 5.948202,
-          //   longitude: 80.548086,
-          //   latitudeDelta: LATITUDE_DELTA,
-          //   longitudeDelta: LONGITUDE_DELTA,
-          // }}
-          region={region}
-        />
-      </View>
     </SafeAreaView>
   );
 };

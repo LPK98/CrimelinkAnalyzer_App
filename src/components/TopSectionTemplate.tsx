@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import React from "react";
 import { Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { images } from "../constants/images";
 
 type props = {
@@ -15,37 +16,41 @@ const TopSectionTemplate: React.FC<props> = ({
   children,
 }) => {
   return (
-    <View
-      style={{
-        flex: 1,
-        flexDirection: "column",
-        backgroundColor: "#0B0C1A",
-        zIndex: 10,
-        elevation: 10,
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: "#0B0C1A" }}>
       <View
-        className="flex flex-row justify-start items-center"
-        style={{ gap: 15, padding: 15 }}
+        style={{
+          flex: 1,
+          flexDirection: "column",
+        }}
       >
-        <Image source={images.logo} style={{ height: 60, width: 60 }} />
         <View
-          className="flex flex-col justify-center items-start"
-          style={{ gap: 4 }}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 15,
+            padding: 15,
+          }}
         >
-          <Text style={{ fontSize: 20, fontWeight: "800", color: "#FFFFFF" }}>
-            {heading}
-          </Text>
-          <Text style={{ fontSize: 14, fontWeight: "500", color: "#FFFFFF" }}>
-            {subHeading}
-          </Text>
+          <Image source={images.logo} style={{ height: 60, width: 60 }} />
+          <View
+            style={{
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "flex-start",
+              gap: 4,
+            }}
+          >
+            <Text style={{ fontSize: 20, fontWeight: "800", color: "#FFFFFF" }}>
+              {heading}
+            </Text>
+            <Text style={{ fontSize: 14, fontWeight: "500", color: "#FFFFFF" }}>
+              {subHeading}
+            </Text>
+          </View>
         </View>
+        {/* content */}
+        <View style={{ flex: 1, paddingBottom: 50 }}>{children}</View>
       </View>
-      <View style={{ flex: 1 }}>{children}</View>
     </View>
   );
 };

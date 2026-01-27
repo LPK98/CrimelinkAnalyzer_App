@@ -73,6 +73,17 @@ const SafetyZone = () => {
     mapRef.current?.animateToRegion(nextRegion, 350);
   };
 
+  const sameRegion = (a: Region, b: Region) => {
+    const eps = 0.00001;
+    const deps = 0.00001;
+    return (
+      Math.abs(a.latitude - b.latitude) < eps &&
+      Math.abs(a.longitude - b.longitude) < eps &&
+      Math.abs(a.latitudeDelta - b.latitudeDelta) < deps &&
+      Math.abs(a.longitudeDelta - b.longitudeDelta) < deps
+    );
+  };  //FIX
+
   if (!region) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
@@ -225,8 +236,63 @@ const SafetyZone = () => {
           </View>
         </View>
       </TopSectionTemplate>
+
+      {/* ----------------------- */}
+
+      {isFullScreen && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            elevation: 9999,
+            backgroundColor: "#0B0C1A",
+          }}
+          pointerEvents="auto"
+        >
+          <MapView
+            style={{ flex: 1 }}
+            provider="google"
+            region={region}
+            // onRegionChangeComplete={(r) => {
+            //   if (!region || !sameRegion(region, r)) setRegion(r);
+            // }}   //FIX: map auto minimizing when fullscreen
+            showsUserLocation
+            showsMyLocationButton={false}
+          />
+
+          <View
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 10000,
+              elevation: 10000,
+              gap: 10,
+            }}
+            pointerEvents="auto"
+          >
+            <OverlayButton
+              icon="fullscreen-exit"
+              size={24}
+              onPress={() => setIsFullScreen(false)}
+            />
+            <OverlayButton icon="add" size={24} onPress={() => zoom("in")} />
+            <OverlayButton
+              icon="remove"
+              size={24}
+              onPress={() => zoom("out")}
+            />
+            <OverlayButton icon="my-location" size={24} onPress={myLocation} />
+          </View>
+        </View>
+      )}
+
+      {/* ----------------------- */}
     </SafeAreaView>
   );
 };
-
 export default SafetyZone;

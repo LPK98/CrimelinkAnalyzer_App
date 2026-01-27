@@ -15,6 +15,7 @@ function OverlayButton({
   return (
     <Pressable
       onPress={onPress}
+      pointerEvents="auto"
       style={{
         height: 50,
         width: 50,

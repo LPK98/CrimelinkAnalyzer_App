@@ -24,8 +24,10 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "permissions": [
+        "ACCESS_FINE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "package": "com.anonymous.CrimelinkAnalyzer_app"
     },
     "web": {
       "output": "static",

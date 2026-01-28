@@ -55,7 +55,7 @@ const Dashboard = () => {
     { name: "Duty Management", route: "/(tabs)/Duty", icon: icons.duty },
     { name: "Safety Zone", route: "/SafetyZone", icon: icons.safetyZone },
     { name: "Schedule", route: "/Dashboard", icon: icons.schedule },
-    { name: "Messages", route: "/Dashboard", icon: icons.message },
+    { name: "Messages", route: "/Chat", icon: icons.message },
   ];
 
   return (

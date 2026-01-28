@@ -11,7 +11,8 @@ import {
   SafeAreaView,
   StatusBar,
   Dimensions,
-  Image, // Added for image preview
+  Image,
+  Pressable, // Added for image preview
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker"; // npx expo install expo-image-picker
@@ -26,10 +27,13 @@ import {
 } from "firebase/firestore";
 
 import { db } from "../firebase";
+import { router } from "expo-router";
+import { useAuth } from "@/src/hooks/useAuth";
 
 const { width } = Dimensions.get("window");
 
 export default function Chat() {
+  const { user } = useAuth();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<
     Array<{ id: string; [key: string]: any }>
@@ -96,13 +100,18 @@ export default function Chat() {
       <View style={styles.header}>
         <SafeAreaView>
           <View style={styles.headerContent}>
+            <Pressable onPress={() => router.replace("/Dashboard")}>
+              <Text style={{ color: "#fff", fontSize: 16, marginRight: 15 }}>
+                Back
+              </Text>
+            </Pressable>
             <View style={styles.avatar}>
               <Text style={styles.avatarText}>JB</Text>
               <View style={styles.onlineDot} />
             </View>
             <View style={styles.headerTextContainer}>
               <Text style={styles.headerTitle} numberOfLines={1}>
-                Jineth Bosilu
+                {user?.name || "Jineth Bosilu"}
               </Text>
               <Text style={styles.headerSubtitle} numberOfLines={1}>
                 Sri Lanka Police Field App

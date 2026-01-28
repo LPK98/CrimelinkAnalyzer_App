@@ -1,11 +1,11 @@
-import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
   ImageBackground,
-  Pressable,
   Text,
+  Image,
+  StyleSheet,
   TextInput,
+  TouchableOpacity,
   View,
 } from "react-native";
 import { useAuth } from "../src/hooks/useAuth";
@@ -36,105 +36,192 @@ export default function LoginScreen() {
 
   return (
     <ImageBackground
-      source={images.bg}
-      resizeMode="contain"
-      style={{ flex: 1, backgroundColor: "#0B1220" }}
+      source={images.bgApp}
+      style={styles.container}
+      resizeMode="cover"
+      imageStyle={{ opacity: 0.1 }}
     >
-      <View className="flex-1 justify-center px-6">
-        <View className="bg-white/90 rounded-2xl px-6 py-7">
-          <Text className="text-2xl font-bold text-center">
-            Crime Link Analyzer
-          </Text>
+      {/* LOGO */}
+      <Image
+        source={images.logo}
+        style={styles.logo}
+      />
 
-          <Text className="text-center text-gray-600 mt-1">
-            Crime Investigation Data Intelligent System
-          </Text>
+      {/* TITLE */}
+      <Text style={styles.title}>Crime Link Analyzer</Text>
+      <Text style={styles.subtitle}>Field Officer Secure Portal</Text>
 
-          <Text className="text-center text-lg font-semibold mt-4">
-            Login to your Account
-          </Text>
+      {/* LOGIN TEXT */}
+      <Text style={styles.loginText}>Login to your account</Text>
 
-          {!!error && (
-            <Text className="text-red-600 text-center mb-3">{error}</Text>
-          )}
+      {/* USERNAME */}
+      <Text style={styles.label}>Email</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter email"
+        placeholderTextColor="#cbd5e1"
+        value={email}
+        onChangeText={setEmail}
+      />
 
-          <View className="flex-row items-center border border-gray-300 rounded-xl px-3 py-3 mt-2">
-            <Ionicons name="person-outline" size={20} />
-            <TextInput
-              className="flex-1 ml-2"
-              placeholder="Email"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-              editable={!loading}
-            />
-          </View>
+      {/* PASSWORD */}
+      <Text style={styles.label}>Password</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter password"
+        placeholderTextColor="#cbd5e1"
+        secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+      />
 
-          <View className="flex-row items-center border border-gray-300 rounded-xl px-3 py-3 mt-3">
-            <Ionicons name="lock-closed-outline" size={20} />
-            <TextInput
-              className="flex-1 ml-2"
-              placeholder="Password"
-              secureTextEntry
-              value={password}
-              onChangeText={setPassword}
-              editable={!loading}
-            />
-          </View>
-
-          <Pressable
-            onPress={() => setRememberMe((v) => !v)}
-            className="flex-row items-center mt-4"
-            disabled={loading}
-          >
-            <View
-              className={`w-5 h-5 rounded border border-gray-400 items-center justify-center ${
-                rememberMe ? "bg-black" : "bg-white"
-              }`}
-            >
-              {rememberMe ? (
-                <Ionicons name="checkmark" size={16} color="white" />
-              ) : null}
-            </View>
-            <Text className="ml-2 text-gray-700">Remember Me</Text>
-          </Pressable>
-
-          <Pressable
-            onPress={handleSubmit}
-            disabled={loading}
-            className={`rounded-xl py-4 items-center mt-5 ${
-              loading ? "bg-gray-500" : "bg-black"
-            }`}
-          >
-            {loading ? (
-              <View className="flex-row items-center">
-                <ActivityIndicator color="white" />
-                <Text className="text-white font-semibold ml-2">
-                  Logging in...
-                </Text>
-              </View>
-            ) : (
-              <Text className="text-white font-semibold">Login</Text>
-            )}
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              console.log("Forgot Password pressed");
-            }}
-            className="mt-4"
-            disabled={loading}
-          >
-            <Text className="text-center text-blue-600">Forgot Password?</Text>
-          </Pressable>
-
-          <Text className="text-center text-xs text-gray-600 mt-5">
-            Access to this System is restricted to authorized personnel of Sri
-            Lanka Crime Division only.
-          </Text>
-        </View>
+      {/* REMEMBER ME */}
+      <View style={styles.rememberRow}>
+        <TouchableOpacity
+          style={[styles.checkbox, rememberMe && styles.checkboxActive]}
+          onPress={() => setRememberMe(!rememberMe)}
+        />
+        <Text style={styles.rememberText}>Remember me</Text>
       </View>
+
+      {/* LOGIN BUTTON */}
+      <TouchableOpacity style={styles.loginButton}>
+        <Text style={styles.loginButtonText}>LOGIN</Text>
+      </TouchableOpacity>
+
+      {/* FORGOT PASSWORD */}
+      <Text style={styles.forgot}>Forgot Password</Text>
+
+      {/* FINGERPRINT */}
+      <Image source={images.fingerprint} style={styles.fingerprint} />
+
+      {/* FOOTER */}
+      <Text style={styles.footer}>
+        Access to this system is restricted to authorized personnel of the Sri
+        Lanka Crime Division only
+      </Text>
+
+      {/* END OF BACKGROUND IMAGE */}
+      <View style={styles.overlay}></View>
     </ImageBackground>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 30,
+    paddingTop: 80,
+  },
+
+  logo: {
+    width: 70,
+    height: 70,
+    marginBottom: 20,
+    resizeMode: "contain",
+  },
+
+  title: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+  },
+
+  subtitle: {
+    color: "#cbd5f5",
+    fontSize: 12,
+    marginBottom: 40,
+  },
+
+  loginText: {
+    color: "#fff",
+    fontSize: 18,
+    marginBottom: 25,
+  },
+
+  label: {
+    alignSelf: "flex-start",
+    color: "#fff",
+    fontSize: 14,
+    marginBottom: 6,
+  },
+
+  input: {
+    width: "100%",
+    height: 48,
+    backgroundColor: "rgba(255,255,255,0.85)",
+    borderRadius: 25,
+    paddingHorizontal: 18,
+    marginBottom: 18,
+    color: "#000",
+  },
+
+  rememberRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginBottom: 30,
+  },
+
+  checkbox: {
+    width: 14,
+    height: 14,
+    borderRadius: 3,
+    backgroundColor: "#e5e7eb",
+    marginRight: 8,
+  },
+
+  checkboxActive: {
+    backgroundColor: "#4f46e5",
+  },
+
+  rememberText: {
+    color: "#fff",
+    fontSize: 13,
+  },
+
+  loginButton: {
+    backgroundColor: "#4f46e5",
+    width: 120,
+    height: 42,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+  },
+
+  loginButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
+  forgot: {
+    color: "#e5e7eb",
+    fontSize: 14,
+    marginBottom: 30,
+  },
+
+  fingerprint: {
+    width: 56,
+    height: 56,
+    marginBottom: 30,
+    resizeMode: "contain",
+  },
+
+  footer: {
+    color: "#cbd5f5",
+    fontSize: 9,
+    textAlign: "center",
+    position: "absolute",
+    bottom: 25,
+    paddingHorizontal: 20,
+  },
+
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)", // 0.6 = opacity
+  },
+});

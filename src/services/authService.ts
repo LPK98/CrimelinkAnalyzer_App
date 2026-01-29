@@ -1,5 +1,14 @@
 import { api } from "../api/api";
-import { setTokens, setUser, getRefreshToken, clearTokens } from "../auth/auth";
+import { clearTokens, getRefreshToken, setTokens, setUser } from "../auth/auth";
+
+import * as SecureStore from "expo-secure-store";
+
+const USER_KEY = "user";
+
+export async function getStoredUser() {
+  const raw = await SecureStore.getItemAsync(USER_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
 
 export type LoginResponse = {
   accessToken: string;
@@ -13,13 +22,11 @@ export type LoginResponse = {
 };
 
 export async function loginFieldOfficer(email: string, password: string) {
-  
   const { data } = await api.post<LoginResponse>("/api/auth/login", {
     email,
     password,
   });
 
-  
   if (data.user?.role !== "FieldOfficer") {
     throw new Error("This app is only for Field Officers.");
   }
@@ -34,18 +41,16 @@ export async function refreshAccessToken() {
   const refreshToken = await getRefreshToken();
   if (!refreshToken) throw new Error("No refresh token");
 
-
-  const { data } = await api.post<{ accessToken: string; refreshToken?: string }>(
-    "/api/auth/refresh",
-    { refreshToken }
-  );
+  const { data } = await api.post<{
+    accessToken: string;
+    refreshToken?: string;
+  }>("/api/auth/refresh", { refreshToken });
 
   await setTokens(data.accessToken, data.refreshToken);
   return data.accessToken;
 }
 
 export async function logout() {
-  
   await clearTokens();
 }
 

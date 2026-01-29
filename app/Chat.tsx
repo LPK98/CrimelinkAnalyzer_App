@@ -1,42 +1,42 @@
+import { Ionicons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker"; // npx expo install expo-image-picker
 import { useEffect, useState } from "react";
 import {
-  View,
+  Dimensions,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  SafeAreaView,
-  StatusBar,
-  Dimensions,
-  Image,
-  Pressable, // Added for image preview
+  View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import * as ImagePicker from "expo-image-picker"; // npx expo install expo-image-picker
 
 import {
-  collection,
   addDoc,
-  query,
-  orderBy,
+  collection,
   onSnapshot,
+  orderBy,
+  query,
   serverTimestamp,
 } from "firebase/firestore";
 
-import { db } from "../firebase";
-import { router } from "expo-router";
 import { useAuth } from "@/src/hooks/useAuth";
+import { router } from "expo-router";
+import { db } from "../firebase";
 
 const { width } = Dimensions.get("window");
 
-export default function Chat() {
+const Chat = () => {
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<
-    Array<{ id: string; [key: string]: any }>
+    { id: string; [key: string]: any }[]
   >([]);
   const [uploading, setUploading] = useState(false);
 
@@ -218,7 +218,7 @@ export default function Chat() {
       </KeyboardAvoidingView>
     </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
   mainContainer: { flex: 1, backgroundColor: "#F5F7F9" },
@@ -323,3 +323,5 @@ const styles = StyleSheet.create({
   },
   disabledSend: { backgroundColor: "#A0A0A0" },
 });
+
+export default Chat;

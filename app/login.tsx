@@ -1,15 +1,18 @@
+import { images } from "@/src/constants/images";
+import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
 import {
-  ImageBackground,
-  Text,
+  ActivityIndicator,
   Image,
+  ImageBackground,
+  Pressable,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useAuth } from "../src/hooks/useAuth";
-import { images } from "@/src/constants/images";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -39,13 +42,10 @@ export default function LoginScreen() {
       source={images.bgApp}
       style={styles.container}
       resizeMode="cover"
-      imageStyle={{ opacity: 0.1 }}
+      imageStyle={{ opacity: 0.8 }}
     >
       {/* LOGO */}
-      <Image
-        source={images.logo}
-        style={styles.logo}
-      />
+      <Image source={images.logo} style={styles.logo} />
 
       {/* TITLE */}
       <Text style={styles.title}>Crime Link Analyzer</Text>
@@ -54,14 +54,20 @@ export default function LoginScreen() {
       {/* LOGIN TEXT */}
       <Text style={styles.loginText}>Login to your account</Text>
 
+      {!!error && (
+        <Text className="text-red-600 text-center mb-3">{error}</Text>
+      )}
+
       {/* USERNAME */}
       <Text style={styles.label}>Email</Text>
       <TextInput
         style={styles.input}
         placeholder="Enter email"
         placeholderTextColor="#cbd5e1"
+        autoCapitalize="none"
         value={email}
         onChangeText={setEmail}
+        editable={!loading}
       />
 
       {/* PASSWORD */}
@@ -73,6 +79,7 @@ export default function LoginScreen() {
         secureTextEntry
         value={password}
         onChangeText={setPassword}
+        editable={!loading}
       />
 
       {/* REMEMBER ME */}
@@ -80,17 +87,48 @@ export default function LoginScreen() {
         <TouchableOpacity
           style={[styles.checkbox, rememberMe && styles.checkboxActive]}
           onPress={() => setRememberMe(!rememberMe)}
-        />
+        >
+          <View
+            className={`w-5 h-5 rounded border border-gray-400 items-center justify-center ${
+              rememberMe ? "bg-black" : "bg-white"
+            }`}
+          >
+            {rememberMe ? (
+              <Ionicons name="checkmark" size={16} color="white" />
+            ) : null}
+          </View>
+        </TouchableOpacity>
         <Text style={styles.rememberText}>Remember me</Text>
       </View>
 
       {/* LOGIN BUTTON */}
-      <TouchableOpacity style={styles.loginButton}>
-        <Text style={styles.loginButtonText}>LOGIN</Text>
+      <TouchableOpacity
+        disabled={loading}
+        onPress={handleSubmit}
+        style={styles.loginButton}
+      >
+        {loading ? (
+          <View className="flex-row items-center">
+            <ActivityIndicator color="white" />
+            <Text
+              style={styles.loginButtonText}
+              // className="text-white font-semibold ml-2"
+            >
+              Logging in...
+            </Text>
+          </View>
+        ) : (
+          <Text className="text-white font-semibold">Login</Text>
+        )}
       </TouchableOpacity>
 
       {/* FORGOT PASSWORD */}
-      <Text style={styles.forgot}>Forgot Password</Text>
+      <Pressable
+        disabled={loading}
+        onPress={() => console.log("Fogot Password pressed")}
+      >
+        <Text style={styles.forgot}>Forgot Password</Text>
+      </Pressable>
 
       {/* FINGERPRINT */}
       <Image source={images.fingerprint} style={styles.fingerprint} />

@@ -48,17 +48,14 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ Leaves (no dots on calendar, and no leave details in duty details section)
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [loadingLeaves, setLoadingLeaves] = useState(false);
 
-  // Leave Request Modal States
   const [leaveModalVisible, setLeaveModalVisible] = useState(false);
   const [leaveSelectedDate, setLeaveSelectedDate] = useState<string>("");
   const [leaveReason, setLeaveReason] = useState<string>("");
   const [submittingLeave, setSubmittingLeave] = useState(false);
 
-  // ---------------- Duty helpers ----------------
   const normalizeDutyStatus = (status?: string) => {
     if (!status) return "Pending";
     const s = String(status).toUpperCase();
@@ -101,7 +98,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     }
   };
 
-  // ---------------- Leave helpers ----------------
   const leaveBadgeClass = (status?: string) => {
     const s = String(status || "PENDING").toUpperCase();
     if (s === "APPROVED") return "bg-emerald-600";
@@ -111,7 +107,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
 
   const todayKey = useMemo(() => new Date().toISOString().split("T")[0], []);
 
-  // ---------------- Load officerId ----------------
   useEffect(() => {
     let mounted = true;
 
@@ -142,16 +137,14 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     if (!officerId) return;
     loadMonthDuties();
     loadMyLeaves();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [officerId]);
 
   useEffect(() => {
     if (!officerId || !selectedDate) return;
     loadDutyDetails(selectedDate);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedDate, officerId]);
 
-  // ✅ ONLY duty dots
+  //  ONLY duty dots
   const buildMarkedDates = (
     data: DutyAssignment[],
     keepSelectedDate?: string,
@@ -198,7 +191,7 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
 
       const dateToSelect = selectedDate || todayKey;
 
-      // ✅ build calendar marks only from duties
+      //  build calendar marks only from duties
       setMarkedDates(buildMarkedDates(data, dateToSelect));
 
       if (!selectedDate) setSelectedDate(dateToSelect);
@@ -272,7 +265,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
       year: "numeric",
     });
 
-  // Leave Request Functions
   const handleOpenLeaveModal = () => {
     setLeaveModalVisible(true);
     setLeaveSelectedDate("");
@@ -395,7 +387,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
           </View>
         )}
 
-        {/* ✅ Duty details ONLY (no leave details here) */}
         <View className="px-4 pt-4 pb-4">
           <Text className="mb-3 text-base font-semibold text-white">
             {selectedDate
@@ -460,7 +451,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* ✅ My Leave Requests List */}
         <View className="px-4 pb-6">
           <Text className="mb-3 text-base font-semibold text-white">
             My Leave Requests
@@ -513,7 +503,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
           )}
         </View>
 
-        {/* Request Leave Button */}
         <View className="px-4 pb-8">
           <TouchableOpacity
             onPress={handleOpenLeaveModal}
@@ -526,7 +515,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
         </View>
       </ScrollView>
 
-      {/* Leave Request Modal */}
       <Modal
         visible={leaveModalVisible}
         animationType="slide"

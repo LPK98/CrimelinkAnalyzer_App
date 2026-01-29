@@ -1,4 +1,3 @@
-// src/services/leaveService.ts
 import { api } from "../api/api";
 import type { LeaveRequest, LeaveSubmitRequest } from "../types/leave";
 

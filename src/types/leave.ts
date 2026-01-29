@@ -1,14 +1,13 @@
-// Leave Types
 export type LeaveStatus = "Pending" | "Approved" | "Denied";
 
 export interface LeaveRequest {
   id: string;
   officerId: string;
   officerName: string;
-  date: string; // YYYY-MM-DD format
+  date: string; // YYYY-MM-DD
   reason: string;
   status: LeaveStatus;
-  requestedDate: string; // YYYY-MM-DD format
+  requestedDate: string; // YYYY-MM-DD
   responseReason?: string;
   respondedBy?: string;
   respondedDate?: string;

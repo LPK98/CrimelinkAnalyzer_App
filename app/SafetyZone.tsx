@@ -82,7 +82,7 @@ const SafetyZone = () => {
       Math.abs(a.latitudeDelta - b.latitudeDelta) < deps &&
       Math.abs(a.longitudeDelta - b.longitudeDelta) < deps
     );
-  };  //FIX
+  }; //FIX
 
   if (!region) {
     return (
@@ -94,10 +94,7 @@ const SafetyZone = () => {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <TopSectionTemplate
-        heading="Crime Link Analyzer"
-        subHeading="Safety Zone Mapping"
-      >
+      <TopSectionTemplate subHeading="Safety Zone Mapping">
         <Searchbar />
         <Button
           onPress={() => {

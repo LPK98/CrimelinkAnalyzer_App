@@ -1,6 +1,8 @@
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -114,7 +116,12 @@ export default function PlateRegistryScreen() {
   return (
     <SafeAreaView className="flex-1 bg-slate-500">
       <View className="bg-slate-800 p-4 mt-10">
-        <Text className="text-white text-2xl font-bold">Plate Registry</Text>
+        <View className="flex-row gap-3">
+          <Pressable onPress={() => router.replace("/Dashboard")}>
+            <Ionicons name="chevron-back" color="#FFFFFF" size={24} />
+          </Pressable>
+          <Text className="text-white text-2xl font-bold">Plate Registry</Text>
+        </View>
 
         <View className="mt-4">
           <TextInput

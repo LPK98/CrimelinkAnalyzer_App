@@ -1,61 +1,87 @@
 import { api } from "../api/api";
-import { clearTokens, getRefreshToken, setTokens, setUser } from "../auth/auth";
+import { clearTokens } from "../auth/auth";
 
-import * as SecureStore from "expo-secure-store";
+import type { AuthUser } from "../types/AuthContextDefinition";
+import {
+  BackendLoginResponse,
+  BackendRefreshResponse,
+  BackendUserDTO,
+  LoginResponse,
+  RefreshResponse,
+} from "../types/login";
 
-const USER_KEY = "user";
+// export type LoginResponse = {
+//   accessToken: string;
+//   refreshToken?: string;
+//   user: {
+//     id: number | string;
+//     username: string;
+//     role: string;
+//     name?: string;
+//   };
+// };   //REMOVE or FIX: in types/login.ts
 
-export async function getStoredUser() {
-  const raw = await SecureStore.getItemAsync(USER_KEY);
-  return raw ? JSON.parse(raw) : null;
-}
-
-export type LoginResponse = {
-  accessToken: string;
-  refreshToken?: string;
-  user: {
-    id: number | string;
-    username: string;
-    role: string;
-    name?: string;
-  };
-};
-
-export async function loginFieldOfficer(email: string, password: string) {
-  const { data } = await api.post<LoginResponse>("/api/auth/login", {
+export async function loginFieldOfficer(
+  email: string,
+  password: string,
+): Promise<LoginResponse> {
+  const { data } = await api.post<BackendLoginResponse>("/api/auth/login", {
     email,
     password,
   });
 
-  if (data.user?.role !== "FieldOfficer") {
+  if (!data.success) {
+    throw new Error(data.message || "Login failed");
+  }
+
+  const user = mapBackendUserToAuthUser(data.user);
+
+  if (user.role !== "FieldOfficer") {
     throw new Error("This app is only for Field Officers.");
   }
 
-  await setTokens(data.accessToken, data.refreshToken);
-  await setUser(data.user);
-
-  return data.user;
+  return {
+    accessToken: data.accessToken,
+    refreshToken: data.refreshToken,
+    user,
+  };
 }
 
-export async function refreshAccessToken() {
-  const refreshToken = await getRefreshToken();
-  if (!refreshToken) throw new Error("No refresh token");
+export async function refreshSession(
+  refreshToken: string,
+): Promise<RefreshResponse> {
+  const { data } = await api.post<BackendRefreshResponse>("/api/auth/refresh", {
+    refreshToken,
+  });
 
-  const { data } = await api.post<{
-    accessToken: string;
-    refreshToken?: string;
-  }>("/api/auth/refresh", { refreshToken });
+  if (!data.success) {
+    throw new Error(data.message || "Refresh failed");
+  }
 
-  await setTokens(data.accessToken, data.refreshToken);
-  return data.accessToken;
+  return { accessToken: data.accessToken, refreshToken: data.refreshToken };
 }
 
 export async function logout() {
+  try {
+    await api.post("/api/auth/logout");
+  } catch {
+    // ignore network/auth errors on logout
+  }
+
   await clearTokens();
 }
 
 export async function fetchMe() {
   //  Change endpoint to your backend "me"
-  const { data } = await api.get("/api/auth/me");
-  return data;
+  const { data } = await api.get<BackendUserDTO>("/api/auth/me");
+  return mapBackendUserToAuthUser((data as any)?.user ?? data);
+}
+
+function mapBackendUserToAuthUser(user: BackendUserDTO): AuthUser {
+  return {
+    id: user.userId,
+    username: user.email,
+    role: user.role,
+    name: user.name,
+  };
 }

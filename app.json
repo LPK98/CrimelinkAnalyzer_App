@@ -11,7 +11,8 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "This app uses your location to show nearby places and reports."
+        "NSLocationWhenInUseUsageDescription": "This app uses your location to show nearby places and reports.",
+        "NSFaceIDUsageDescription": "Allow Crime Link Analyzer to use Face ID to authenticate you."
       }
     },
     "android": {

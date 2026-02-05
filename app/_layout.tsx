@@ -17,11 +17,6 @@ function Guard({ children }: { children: React.ReactNode }) {
       router.replace("/login");
       return;
     }
-
-    // Logged in but still on auth routes (login)
-    if (user && isAuthRoute) {
-      router.replace("/Dashboard");
-    }
   }, [user, loading, pathname]);
 
   return <>{children}</>;

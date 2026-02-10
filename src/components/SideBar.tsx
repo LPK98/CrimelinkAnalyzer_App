@@ -3,6 +3,7 @@ import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { icons } from "../constants/icons";
 import { useAuth } from "../hooks/useAuth";
+import DutyToggleScreen from "@/app/DutyToggleScreen";
 
 const SideBar = () => {
   const { user, logout } = useAuth();
@@ -50,6 +51,9 @@ const SideBar = () => {
           <Text>{item.name}</Text>
         </Pressable>
       ))}
+      <View>
+        <DutyToggleScreen />
+      </View>
     </View>
   );
 };

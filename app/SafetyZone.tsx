@@ -1,13 +1,26 @@
 import TopSectionTemplate from "@/src/components/TopSectionTemplate";
 import OverlayButton from "@/src/components/UI/OverlayButton";
 import Searchbar from "@/src/components/UI/Searchbar";
+import { getCrimeLocations } from "@/src/services/safetyzoneService";
+import { CrimeLocationType } from "@/src/types/SafetyzoneTypes";
 import { Button } from "@react-navigation/elements";
 import * as Location from "expo-location";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Dimensions, Text, View } from "react-native";
-import MapView, { Region } from "react-native-maps";
+import MapView, { Marker, Region } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const SRI_LANKA_BOUNDS = {
+  northEast: {
+    latitude: 9.85,
+    longitude: 81.9,
+  },
+  southWest: {
+    latitude: 5.85,
+    longitude: 79.6,
+  },
+};
 
 const SafetyZone = () => {
   const { width, height } = Dimensions.get("window");
@@ -15,9 +28,12 @@ const SafetyZone = () => {
   const LATITUDE_DELTA = 0.05;
   const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
+  const isAnimatingRef = React.useRef(false);
   const mapRef = React.useRef<MapView>(null);
+  const fullMapRef = React.useRef<MapView>(null);
   const [region, setRegion] = useState<Region | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [crimeLocations, setCrimeLocations] = useState<CrimeLocationType[]>([]);
 
   useEffect(() => {
     const loadLocation = async () => {
@@ -41,7 +57,39 @@ const SafetyZone = () => {
     };
 
     loadLocation();
+    fetchLocations();
   }, []);
+
+  const fetchLocations = async () => {
+    try {
+      const locations = await getCrimeLocations();
+      setCrimeLocations(locations);
+      // console.log(locations); //REMOVE :TEST
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const onMapReady = async (ref: React.RefObject<MapView | null>) => {
+    if (!ref.current) return;
+
+    await ref.current.setMapBoundaries(
+      SRI_LANKA_BOUNDS.northEast,
+      SRI_LANKA_BOUNDS.southWest,
+    );
+  };
+
+  const animateTo = (next: Region, duration = 300) => {
+    isAnimatingRef.current = true;
+    setRegion(next);
+
+    const activeRef = isFullScreen ? fullMapRef : mapRef;
+    activeRef.current?.animateToRegion(next, duration);
+
+    setTimeout(() => {
+      isAnimatingRef.current = false;
+    }, duration + 50);
+  };
 
   const zoom = (direction: "in" | "out") => {
     if (!region) return;
@@ -53,8 +101,8 @@ const SafetyZone = () => {
       latitudeDelta: region.latitudeDelta * zoomFactor,
       longitudeDelta: region.longitudeDelta * zoomFactor,
     };
-    setRegion(newRegin);
-    mapRef.current?.animateToRegion(newRegin, 250);
+
+    animateTo(newRegin, 250);
   };
 
   const myLocation = async () => {
@@ -69,9 +117,19 @@ const SafetyZone = () => {
       longitudeDelta: region?.longitudeDelta ?? LONGITUDE_DELTA,
     };
 
-    setRegion(nextRegion);
-    mapRef.current?.animateToRegion(nextRegion, 350);
+    animateTo(nextRegion, 350);
   };
+
+  const sameRegion = (a: Region, b: Region) => {
+    const eps = 0.00001;
+    const deps = 0.00001;
+    return (
+      Math.abs(a.latitude - b.latitude) < eps &&
+      Math.abs(a.longitude - b.longitude) < eps &&
+      Math.abs(a.latitudeDelta - b.latitudeDelta) < deps &&
+      Math.abs(a.longitudeDelta - b.longitudeDelta) < deps
+    );
+  }; //FIX
 
   if (!region) {
     return (
@@ -83,11 +141,9 @@ const SafetyZone = () => {
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
-      <TopSectionTemplate
-        heading="Crime Link Analyzer"
-        subHeading="Safety Zone Mapping"
-      >
+      <TopSectionTemplate subHeading="Safety Zone Mapping">
         <Searchbar />
+        {/* REMOVE */}
         <Button
           onPress={() => {
             router.replace("/Dashboard");
@@ -95,6 +151,8 @@ const SafetyZone = () => {
         >
           Back
         </Button>
+        <Button onPress={fetchLocations}>test</Button>
+        {/* REMOVE */}
         <View
           style={{
             flex: 1,
@@ -125,16 +183,33 @@ const SafetyZone = () => {
               style={{ flex: 1, height: "100%", width: "100%" }}
               provider="google"
               region={region}
-              onRegionChangeComplete={(region) => setRegion(region)}
+              onMapReady={() => onMapReady(mapRef)}
+              onRegionChangeComplete={(region) => {
+                if (isAnimatingRef.current) return;
+                setRegion(region);
+              }}
               showsUserLocation={true}
               showsMyLocationButton={false}
+              minZoomLevel={6}
+              maxZoomLevel={18}
               // initialRegion={{
               //   latitude: 5.948202,
               //   longitude: 80.548086,
               //   latitudeDelta: LATITUDE_DELTA,
               //   longitudeDelta: LONGITUDE_DELTA,
               // }} //REMOVE
-            />
+            >
+              {crimeLocations.map((loc, index) => (
+                <Marker
+                  key={loc.id ?? `${loc.latitude}-${loc.longitude}-${index}`}
+                  coordinate={{
+                    latitude: loc.latitude,
+                    longitude: loc.longitude,
+                  }}
+                  title={loc.crimeType}
+                />
+              ))}
+            </MapView>
             {/* Overlay buttons */}
             <View
               style={{
@@ -225,8 +300,71 @@ const SafetyZone = () => {
           </View>
         </View>
       </TopSectionTemplate>
+
+      {isFullScreen && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 9999,
+            elevation: 9999,
+            backgroundColor: "#0B0C1A",
+          }}
+          pointerEvents="auto"
+        >
+          <MapView
+            style={{ flex: 1 }}
+            provider="google"
+            region={region}
+            onMapReady={() => onMapReady(fullMapRef)}
+            onRegionChangeComplete={(r) => {
+              if (!region || !sameRegion(region, r)) setRegion(r);
+            }} //FIX: map auto minimizing when fullscreen
+            showsUserLocation
+            showsMyLocationButton={false}
+          >
+            {crimeLocations.map((loc, index) => (
+              <Marker
+                key={loc.id ?? `${loc.latitude}-${loc.longitude}-${index}`}
+                coordinate={{
+                  latitude: loc.latitude,
+                  longitude: loc.longitude,
+                }}
+                title={loc.crimeType}
+              />
+            ))}
+          </MapView>
+
+          <View
+            style={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              zIndex: 10000,
+              elevation: 10000,
+              gap: 10,
+            }}
+            pointerEvents="auto"
+          >
+            <OverlayButton
+              icon="fullscreen-exit"
+              size={24}
+              onPress={() => setIsFullScreen(false)}
+            />
+            <OverlayButton icon="add" size={24} onPress={() => zoom("in")} />
+            <OverlayButton
+              icon="remove"
+              size={24}
+              onPress={() => zoom("out")}
+            />
+            <OverlayButton icon="my-location" size={24} onPress={myLocation} />
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
-
 export default SafetyZone;

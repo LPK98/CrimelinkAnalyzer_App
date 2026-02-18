@@ -1,28 +1,50 @@
+import {
+  getBoolFromPrefs,
+  getStringFromPrefs,
+  removeKey,
+  saveBoolToPrefs,
+  saveStringToPrefs,
+} from "../utils/secureStore";
 import { storage } from "./storage";
 
 const ACCESS_TOKEN_KEY = "access_token";
 const REFRESH_TOKEN_KEY = "refresh_token";
+const BIOMETRICS_ENABLED = "biometrics_enabled";
 const USER_KEY = "auth_user";
 
 export async function setTokens(accessToken: string, refreshToken?: string) {
-  await storage.setItem(ACCESS_TOKEN_KEY, accessToken);
+  await saveStringToPrefs(ACCESS_TOKEN_KEY, accessToken);
   if (refreshToken) {
-    await storage.setItem(REFRESH_TOKEN_KEY, refreshToken);
+    await saveStringToPrefs(REFRESH_TOKEN_KEY, refreshToken);
   }
 }
 
 export async function getAccessToken() {
-  return storage.getItem(ACCESS_TOKEN_KEY);
+  return getStringFromPrefs(ACCESS_TOKEN_KEY);
 }
 
 export async function getRefreshToken() {
-  return storage.getItem(REFRESH_TOKEN_KEY);
+  return getStringFromPrefs(REFRESH_TOKEN_KEY);
+}
+
+export async function setBiometricsEnabled(enabled: boolean) {
+  await saveBoolToPrefs(BIOMETRICS_ENABLED, enabled);
+}
+
+export async function isBiometricsEnabled() {
+  return getBoolFromPrefs(BIOMETRICS_ENABLED);
 }
 
 export async function clearTokens() {
-  await storage.deleteItem(ACCESS_TOKEN_KEY);
-  await storage.deleteItem(REFRESH_TOKEN_KEY);
+  await removeKey(ACCESS_TOKEN_KEY);
+  await removeKey(REFRESH_TOKEN_KEY);
+  await removeKey(BIOMETRICS_ENABLED);
+
   await storage.deleteItem(USER_KEY);
+}
+
+export async function clearRefreshToken() {
+  await removeKey(REFRESH_TOKEN_KEY);
 }
 
 export async function setUser(user: any) {

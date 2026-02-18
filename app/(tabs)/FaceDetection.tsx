@@ -11,6 +11,12 @@ const FaceDetection = () => {
       >
         <Text className="text-gray-700 text-2xl">Back</Text>
       </Pressable>
+      <Pressable
+        className="flex w-20 justify-center items-center"
+        onPress={() => router.replace("/Dashboard")}
+      >
+        <Text className="text-gray-700 text-2xl">Back to Dashboard</Text>
+      </Pressable>
       <Text className="text-3xl">FaceDetection</Text>
     </View>
   );

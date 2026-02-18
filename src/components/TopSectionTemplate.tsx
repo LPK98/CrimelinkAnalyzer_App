@@ -5,7 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { images } from "../constants/images";
 
 type props = {
-  heading: string;
+  heading?: string;
   subHeading: string;
   children?: React.ReactNode;
 };
@@ -41,10 +41,10 @@ const TopSectionTemplate: React.FC<props> = ({
             }}
           >
             <Text style={{ fontSize: 20, fontWeight: "800", color: "#FFFFFF" }}>
-              {heading}
+              {heading ?? "Crime Link Analyzer"}
             </Text>
             <Text style={{ fontSize: 14, fontWeight: "500", color: "#FFFFFF" }}>
-              {subHeading}
+              {subHeading ?? "Sub Heading"}
             </Text>
           </View>
         </View>

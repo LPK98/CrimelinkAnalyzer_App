@@ -144,14 +144,14 @@ const SafetyZone = () => {
       <TopSectionTemplate subHeading="Safety Zone Mapping">
         <Searchbar />
         {/* REMOVE */}
-        <Button
+        {/* <Button
           onPress={() => {
             router.replace("/Dashboard");
           }}
         >
           Back
         </Button>
-        <Button onPress={fetchLocations}>test</Button>
+        <Button onPress={fetchLocations}>test</Button> */}
         {/* REMOVE */}
         <View
           style={{

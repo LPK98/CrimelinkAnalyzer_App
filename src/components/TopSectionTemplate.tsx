@@ -1,8 +1,9 @@
 import { Image } from "expo-image";
 import React from "react";
-import { Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Pressable, Text, View } from "react-native";
 import { images } from "../constants/images";
+import { router } from "expo-router";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 
 type props = {
   heading?: string;
@@ -31,6 +32,9 @@ const TopSectionTemplate: React.FC<props> = ({
             padding: 15,
           }}
         >
+          <Pressable onPress={() => router.replace("/Dashboard")}>
+            <Ionicons name="chevron-back" color="#FFFFFF" size={24} />
+          </Pressable>
           <Image source={images.logo} style={{ height: 60, width: 60 }} />
           <View
             style={{

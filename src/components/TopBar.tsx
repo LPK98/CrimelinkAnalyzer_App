@@ -1,7 +1,9 @@
 import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { icons } from "../constants/icons";
+import Feather from "react-native-vector-icons/Feather";
 import { images } from "../constants/images";
+import { useTheme } from "../theme/ThemeProvider";
 
 type topbarProps = {
   openSidebar: () => void;
@@ -10,14 +12,12 @@ type topbarProps = {
 };
 
 const TopBar: React.FC<topbarProps> = ({ openSidebar, closeSidebar, name }) => {
+  const { colors } = useTheme();
+
   return (
     <View className="flex flex-row gap-5 justify-start items-center w-full">
       <Pressable onPress={openSidebar} hitSlop={10}>
-        <Image
-          source={icons.hamburgerMenu}
-          style={{ width: 30, height: 30, backgroundColor: "#0B1220" }}
-          resizeMode="contain"
-        />
+        <Feather name="menu" color={colors.text} size={30} />
       </Pressable>
       <View className="flex flex-row gap-3 justify-start items-center w-full px-4">
         <Image

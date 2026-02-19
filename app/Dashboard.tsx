@@ -3,6 +3,7 @@ import TopBar from "@/src/components/TopBar";
 import { icons } from "@/src/constants/icons";
 import { images } from "@/src/constants/images";
 import { useAuth } from "@/src/hooks/useAuth";
+import { useTheme } from "@/src/theme/ThemeProvider";
 import { Href, router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -21,6 +22,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SIDEBAR_WIDTH = Math.min(320, Math.floor(SCREEN_WIDTH * 0.75));
 
 const Dashboard = () => {
+  const { colors } = useTheme();
   const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const slideX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
@@ -66,7 +68,10 @@ const Dashboard = () => {
         imageStyle={{ opacity: 0.1 }}
         resizeMode="cover"
       >
-        <View className="w-full h-full flex flex-col justify-center items-center gap-5 px-4 py-2">
+        <View
+          style={{ backgroundColor: colors.background }}
+          className="w-full h-full flex flex-col justify-center items-center gap-5 px-4 py-2"
+        >
           <View className="flex-1 items-center px-5 w-full">
             <TopBar
               openSidebar={openSidebar}

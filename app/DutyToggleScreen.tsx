@@ -7,7 +7,7 @@ import {
 } from "@/src/services/location/locationTracker";
 
 export default function DutyToggleScreen() {
-  const [isOnDuty, setIsOnDuty] = useState(true);
+  const [isOnDuty, setIsOnDuty] = useState(false);
 
   useEffect(() => {
     initLocationDB();

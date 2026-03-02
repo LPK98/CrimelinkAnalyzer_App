@@ -301,8 +301,6 @@ const SafetyZone = () => {
         </View>
       </TopSectionTemplate>
 
-      {/* ----------------------- */}
-
       {isFullScreen && (
         <View
           style={{
@@ -366,8 +364,6 @@ const SafetyZone = () => {
           </View>
         </View>
       )}
-
-      {/* ----------------------- */}
     </SafeAreaView>
   );
 };

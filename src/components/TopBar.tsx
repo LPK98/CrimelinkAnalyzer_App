@@ -1,7 +1,7 @@
 import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { icons } from "../constants/icons";
-import Feather from "react-native-vector-icons/Feather";
+import { Feather } from "@expo/vector-icons";
 import { images } from "../constants/images";
 import { useTheme } from "../theme/ThemeProvider";
 

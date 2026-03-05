@@ -13,6 +13,7 @@ import {
   Image,
   ImageBackground,
   Pressable,
+  StyleSheet,
   Text,
   View,
 } from "react-native";
@@ -61,18 +62,34 @@ const Dashboard = () => {
   ];
 
   return (
-    <SafeAreaView>
+    <SafeAreaView style={{ flex: 1 }}>
       <ImageBackground
+        style={{ flex: 1 }}
         source={images.bgApp}
-        className="w-full h-full"
+        // className="w-full h-full"
         imageStyle={{ opacity: 0.1 }}
         resizeMode="cover"
       >
         <View
-          style={{ backgroundColor: colors.background }}
-          className="w-full h-full flex flex-col justify-center items-center gap-5 px-4 py-2"
+          style={{
+            backgroundColor: colors.background,
+            width: "100%",
+            height: "100%",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+          }}
         >
-          <View className="flex-1 items-center px-5 w-full">
+          <View
+            style={{
+              flex: 1,
+              alignItems: "center",
+              paddingHorizontal: 20,
+              width: "100%",
+            }}
+          >
             <TopBar
               openSidebar={openSidebar}
               closeSidebar={closeSidebar}
@@ -80,14 +97,22 @@ const Dashboard = () => {
             />
             <Pressable //REMOVE
               onPress={logout}
-              className="mt-6 bg-red-600 rounded-xl py-3 items-center"
+              style={{
+                marginTop: 24,
+                backgroundColor: "#ef4444",
+                borderRadius: 12,
+                paddingVertical: 12,
+                alignItems: "center",
+              }}
             >
-              <Text className="text-white font-semibold">Logout</Text>
+              <Text style={{ color: "#fff", fontSize: 16, fontWeight: 600 }}>
+                Logout
+              </Text>
             </Pressable>
           </View>
 
           {/* Menu buttons */}
-          <View className="absolute bottom-4 left-0 right-0 px-4">
+          <View style={styles.menuContainer}>
             <FlatList
               data={menuItems}
               numColumns={3}
@@ -100,19 +125,17 @@ const Dashboard = () => {
               renderItem={({ item, index }) => (
                 <Pressable
                   key={index}
-                  className="flex items-center justify-center h-28 w-28"
+                  style={styles.menuButton}
                   onPress={() => router.replace(item.route)}
                 >
-                  <View className="bg-white p-2 rounded-2xl">
+                  <View style={styles.iconContainer}>
                     <Image
                       style={{ width: 40, height: 40, marginBottom: 8 }}
                       source={item.icon}
                       resizeMode="contain"
                     />
                   </View>
-                  <Text className="text-textSecondary text-center font-medium text-sm">
-                    {item.name}
-                  </Text>
+                  <Text style={styles.menuText}>{item.name}</Text>
                 </Pressable>
               )}
             />
@@ -158,5 +181,32 @@ const Dashboard = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  menuContainer: {
+    position: "absolute",
+    bottom: 16,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+  },
+  menuButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 112,
+    width: 112,
+  },
+  iconContainer: {
+    backgroundColor: "#fff",
+    padding: 8,
+    borderRadius: 16,
+  },
+  menuText: {
+    color: "#181B41",
+    textAlign: "center",
+    fontWeight: "500",
+    fontSize: 14,
+  },
+});
 
 export default Dashboard;

@@ -1,10 +1,9 @@
+import DutyToggleScreen from "@/app/DutyToggleScreen";
 import { router } from "expo-router";
 import React from "react";
 import { Image, Pressable, Text, View } from "react-native";
 import { icons } from "../constants/icons";
 import { useAuth } from "../hooks/useAuth";
-import DutyToggleScreen from "@/app/DutyToggleScreen";
-import { images } from "../constants/images";
 import { useTheme } from "../theme/ThemeProvider";
 
 const SideBar = () => {
@@ -84,7 +83,7 @@ const SideBar = () => {
           onPress={item.onPress}
         >
           <View>
-            {item.icon === typeof React.Component ? (
+            {React.isValidElement(item.icon) ? (
               item.icon
             ) : (
               <Image source={item.icon} style={{ width: 24, height: 24 }} />

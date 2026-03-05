@@ -1,10 +1,9 @@
+import { ThemeProvider } from "@/src/theme/ThemeProvider";
 import { router, Stack, usePathname } from "expo-router";
 import React, { useEffect } from "react";
 import AuthProvider from "../src/context/AuthContext";
 import { useAuth } from "../src/hooks/useAuth";
 import "./global.css";
-import { ThemeProvider, useTheme } from "@/src/theme/ThemeProvider";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 function Guard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,10 +29,8 @@ export default function RootLayout() {
       <Guard>
         <ThemeProvider>
           <Stack screenOptions={{ headerShown: false }}>
-            <SafeAreaView>
-              <Stack.Screen name="login" />
-              <Stack.Screen name="Dashboard" />
-            </SafeAreaView>
+            <Stack.Screen name="login" />
+            <Stack.Screen name="Dashboard" />
           </Stack>
         </ThemeProvider>
       </Guard>

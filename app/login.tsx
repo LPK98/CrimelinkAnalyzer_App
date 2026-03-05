@@ -37,7 +37,6 @@ export default function LoginScreen() {
   const [isBiometricsEnrolled, setIsBiometricsEnrolled] = useState(false);
   const [biometricsEnabled, setBiometricsEnabled] = useState(false);
   const [hasSavedRefreshToken, setHasSavedRefreshToken] = useState(false);
-  const [autoBiometricAttempted, setAutoBiometricAttempted] = useState(false);
 
   const { login, loginWithRefreshToken, loading } = useAuth();
 
@@ -66,34 +65,9 @@ export default function LoginScreen() {
     useCallback(() => {
       setError("");
       setIsLogWithBiometrics(false);
-      setAutoBiometricAttempted(false);
       checkBiometricsSupport();
     }, [checkBiometricsSupport]),
   );
-
-  useEffect(() => {
-    if (autoBiometricAttempted) return;
-    if (
-      !isBiometricsSupported ||
-      !isBiometricsEnrolled ||
-      !biometricsEnabled ||
-      !hasSavedRefreshToken ||
-      loading
-    ) {
-      return;
-    }
-
-    setAutoBiometricAttempted(true);
-    void handleBiometricLogin();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    autoBiometricAttempted,
-    biometricsEnabled,
-    hasSavedRefreshToken,
-    isBiometricsEnrolled,
-    isBiometricsSupported,
-    loading,
-  ]);
 
   const handleSubmit = async () => {
     setError("");
@@ -131,39 +105,39 @@ export default function LoginScreen() {
         );
         setIsLogWithBiometrics(false);
       } else {
-      try {
-        const saved = await LocalAuthentication.authenticateAsync({
-          promptMessage: "Enable biometric login",
-          fallbackLabel: "Use Passcode",
-        });
+        try {
+          const saved = await LocalAuthentication.authenticateAsync({
+            promptMessage: "Enable biometric login",
+            fallbackLabel: "Use Passcode",
+          });
 
-        if (saved.success) {
-          if (!refreshToken) {
-            Alert.alert(
-              "Biometrics",
-              "Biometric login needs a refresh token from backend.",
-            );
-            await setBiometricsEnabledPref(false);
-            await clearRefreshToken();
-            setBiometricsEnabled(false);
-            setHasSavedRefreshToken(false);
+          if (saved.success) {
+            if (!refreshToken) {
+              Alert.alert(
+                "Biometrics",
+                "Biometric login needs a refresh token from backend.",
+              );
+              await setBiometricsEnabledPref(false);
+              await clearRefreshToken();
+              setBiometricsEnabled(false);
+              setHasSavedRefreshToken(false);
+            } else {
+              await setTokens(accessToken, refreshToken);
+              await setBiometricsEnabledPref(true);
+              setBiometricsEnabled(true);
+              setHasSavedRefreshToken(true);
+            }
           } else {
-            await setTokens(accessToken, refreshToken);
-            await setBiometricsEnabledPref(true);
-            setBiometricsEnabled(true);
-            setHasSavedRefreshToken(true);
+            setIsLogWithBiometrics(false);
           }
-        } else {
+        } catch (error) {
+          console.error("Error enabling biometrics:", error);
           setIsLogWithBiometrics(false);
+          Alert.alert(
+            "Biometrics",
+            "Unable to enable biometric login on this device. You can still login with email/password.",
+          );
         }
-      } catch (error) {
-        console.error("Error enabling biometrics:", error);
-        setIsLogWithBiometrics(false);
-        Alert.alert(
-          "Biometrics",
-          "Unable to enable biometric login on this device. You can still login with email/password.",
-        );
-      }
       }
     }
 
@@ -294,7 +268,9 @@ export default function LoginScreen() {
       <View
         style={[
           styles.rememberRow,
-          (!isBiometricsSupported || !isBiometricsEnrolled) && { marginBottom: 8 },
+          (!isBiometricsSupported || !isBiometricsEnrolled) && {
+            marginBottom: 8,
+          },
         ]}
       >
         <TouchableOpacity
@@ -324,15 +300,15 @@ export default function LoginScreen() {
             setIsLogWithBiometrics(!isLogWithBiometrics);
           }}
         >
-            <View
-              className={`w-5 h-5 rounded border border-gray-400 items-center justify-center ${
-                isLogWithBiometrics ? "bg-black" : "bg-white"
-              }`}
-            >
-              {isLogWithBiometrics ? (
-                <Ionicons name="checkmark" size={16} color="white" />
-              ) : null}
-            </View>
+          <View
+            className={`w-5 h-5 rounded border border-gray-400 items-center justify-center ${
+              isLogWithBiometrics ? "bg-black" : "bg-white"
+            }`}
+          >
+            {isLogWithBiometrics ? (
+              <Ionicons name="checkmark" size={16} color="white" />
+            ) : null}
+          </View>
         </TouchableOpacity>
         <Text style={styles.rememberText}>Enable biometric login</Text>
       </View>

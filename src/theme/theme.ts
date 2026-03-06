@@ -3,10 +3,12 @@ export const theme = {
     background: "#FFFFFF",
     text: "#000000",
     primary: "#007AFF",
+    primaryAccent: "#9ebee8",
     secondary: "#5856D6",
     accent: "#FF9500",
     card: "#F3F4F6",
     border: "#E5E7EB",
+    white: "#FFFFFF",
   },
   dark: {
     background: "#0B0C1A",

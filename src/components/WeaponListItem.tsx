@@ -6,7 +6,7 @@ import React from "react";
 import { weaponListItemType } from "../types/weaponTypes";
 import { images } from "../constants/images";
 
-const WeaponListItem: React.FC<weaponListItemType> = ({ name, imageUrl }) => {
+const WeaponListItem: React.FC<weaponListItemType> = ({ weapon }) => {
   const { colors } = useTheme();
   return (
     <Pressable onPress={() => router.replace("/WeaponDetails")}>
@@ -21,7 +21,7 @@ const WeaponListItem: React.FC<weaponListItemType> = ({ name, imageUrl }) => {
           marginTop: 10,
         }}
       >
-        <Image source={imageUrl} style={{ width: 50, height: 50 }} />
+        <Image source={images.logo} style={{ width: 50, height: 50 }} />
         <View
           style={{
             flex: 1,
@@ -29,7 +29,7 @@ const WeaponListItem: React.FC<weaponListItemType> = ({ name, imageUrl }) => {
             justifyContent: "space-between",
           }}
         >
-          <Text style={{ color: colors.text }}>{name}</Text>
+          <Text style={{ color: colors.text }}>{weapon.weaponType}</Text>
 
           <Ionicons name="chevron-forward" color={colors.text} size={24} />
         </View>

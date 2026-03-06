@@ -5,12 +5,34 @@ import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import WeaponListItem from "@/src/components/WeaponListItem";
 import { images } from "@/src/constants/images";
+import { useEffect, useState } from "react";
+import { getAllWeapons } from "@/src/services/weapon/weaponService";
 
 const WeaponRequest = () => {
   const { colors } = useTheme();
+  const [weapons, setWeapons] = useState([]);
+
+  async function fetchWeapons() {
+    try {
+      const data = await getAllWeapons();
+      setWeapons(data);
+      console.log("Fetched weapons:", data[0].weaponType);
+    } catch (error) {
+      console.error("Failed to fetch weapons:", error);
+    }
+  }
+
+  useEffect(() => {
+    fetchWeapons();
+  }, []);
+
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.background, paddingHorizontal: 10 }}
+      style={{
+        flex: 1,
+        backgroundColor: colors.background,
+        paddingHorizontal: 10,
+      }}
     >
       <View
         style={{ width: "100%" }}
@@ -24,7 +46,9 @@ const WeaponRequest = () => {
         </Text>
       </View>
       <View>
-        <WeaponListItem name="pistol" imageUrl={images.logo} />
+        {weapons.map((weapon: any) => (
+          <WeaponListItem key={weapon.serialNumber} weapon={weapon} />
+        ))}
       </View>
     </SafeAreaView>
   );

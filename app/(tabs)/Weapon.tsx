@@ -1,4 +1,5 @@
 import WeaponCard from "@/src/components/WeaponCard";
+import { useAuth } from "@/src/hooks/useAuth";
 import { getWeaponByOfficer } from "@/src/services/weapon/weaponService";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
@@ -11,11 +12,12 @@ const Weapon = () => {
   const { colors } = useTheme();
   const [weapons, setWeapons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const getAssignedWeapons = async () => {
     setLoading(true);
     try {
-      const weapons = await getWeaponByOfficer(1);
+      const weapons = await getWeaponByOfficer(user?.id as number);
       setWeapons(weapons);
     } catch (error) {
       console.error("Error fetching assigned weapons:", error);

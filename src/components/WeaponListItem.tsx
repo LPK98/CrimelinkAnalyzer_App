@@ -6,10 +6,40 @@ import React from "react";
 import { weaponListItemType } from "../types/weaponTypes";
 import { images } from "../constants/images";
 
-const WeaponListItem: React.FC<weaponListItemType> = ({ weapon }) => {
+const WeaponListItem: React.FC<weaponListItemType> = ({
+  weapon,
+  name,
+  imageUrl,
+}) => {
   const { colors } = useTheme();
+  const weaponName = weapon?.weaponType ?? name ?? "Unknown Weapon";
+  const serialNo = weapon?.serialNumber;
+
+  const handlePress = () => {
+    if (!serialNo) return;
+
+    router.push({
+      pathname: "/[serialNo]",
+      params: {
+        serialNo,
+        weaponType: weapon?.weaponType,
+        status: weapon?.status,
+        updatedDate: weapon?.updatedDate
+          ? String(weapon.updatedDate)
+          : undefined,
+        registerDate: weapon?.registerDate
+          ? String(weapon.registerDate)
+          : undefined,
+      },
+    });
+  };
+
   return (
-    <Pressable onPress={() => router.replace("/WeaponDetails")}>
+    <Pressable
+      onPress={handlePress}
+      disabled={!serialNo}
+      style={{ width: "100%", opacity: serialNo ? 1 : 0.7 }}
+    >
       <View
         style={{
           backgroundColor: colors.card,
@@ -21,7 +51,10 @@ const WeaponListItem: React.FC<weaponListItemType> = ({ weapon }) => {
           marginTop: 10,
         }}
       >
-        <Image source={images.logo} style={{ width: 50, height: 50 }} />
+        <Image
+          source={imageUrl ?? images.logo}
+          style={{ width: 50, height: 50 }}
+        />
         <View
           style={{
             flex: 1,
@@ -29,7 +62,7 @@ const WeaponListItem: React.FC<weaponListItemType> = ({ weapon }) => {
             justifyContent: "space-between",
           }}
         >
-          <Text style={{ color: colors.text }}>{weapon.weaponType}</Text>
+          <Text style={{ color: colors.text }}>{weaponName}</Text>
 
           <Ionicons name="chevron-forward" color={colors.text} size={24} />
         </View>

@@ -1,10 +1,9 @@
 import { router } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import WeaponListItem from "@/src/components/WeaponListItem";
-import { images } from "@/src/constants/images";
 import { useEffect, useState } from "react";
 import { getAllWeapons } from "@/src/services/weapon/weaponService";
 
@@ -45,11 +44,11 @@ const WeaponRequest = () => {
           Select a Weapon
         </Text>
       </View>
-      <View>
+      <ScrollView style={{ width: "100%" }} contentContainerStyle={{ paddingBottom: 20 }}>
         {weapons.map((weapon: any) => (
           <WeaponListItem key={weapon.serialNumber} weapon={weapon} />
         ))}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };

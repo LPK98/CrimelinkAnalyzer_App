@@ -1,6 +1,6 @@
 import { useTheme } from "@/src/theme/ThemeProvider";
-import { router } from "expo-router";
-import { Pressable, Text, View, StyleSheet } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { Pressable, Text, View, StyleSheet, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { ImageBackground } from "expo-image";
@@ -8,10 +8,57 @@ import Slider from "@react-native-community/slider";
 import { images } from "@/src/constants/images";
 import SimpleLineIcons from "react-native-vector-icons/SimpleLineIcons";
 import { useState } from "react";
+import { submitWeaponRequest } from "@/src/services/weapon/weaponService";
+import { useAuth } from "@/src/hooks/useAuth";
+
+type WeaponRouteParams = {
+  serialNo?: string;
+  weaponType?: string;
+  status?: string;
+  updatedDate?: string;
+  registerDate?: string;
+};
 
 const WeaponRequest = () => {
   const { colors } = useTheme();
+  const { user } = useAuth();
   const [ammoCount, setAmmoCount] = useState(0);
+  const [requestNote, setRequestNote] = useState("");
+  const params = useLocalSearchParams<WeaponRouteParams>();
+
+  const selectedWeaponType = params.weaponType ?? "Unknown Weapon";
+  const selectedSerialNo = params.serialNo ?? "N/A";
+  const selectedStatus = params.status ?? "N/A";
+
+  const formatDate = (date?: string) => {
+    if (!date) return "N/A";
+    const parsedDate = new Date(date);
+    if (Number.isNaN(parsedDate.getTime())) return date;
+    return parsedDate.toLocaleDateString();
+  };
+  const handleSubmit = async () => {
+    try {
+      const requestedById =
+        typeof user?.id === "string" ? Number(user.id) : user?.id;
+
+      if (!selectedSerialNo || selectedSerialNo === "N/A") {
+        throw new Error("Weapon serial is missing");
+      }
+
+      if (!requestedById || Number.isNaN(requestedById)) {
+        throw new Error("User is not available. Please login again.");
+      }
+
+      await submitWeaponRequest({
+        weaponSerial: selectedSerialNo,
+        ammoCount,
+        requestNote,
+        requestedById,
+      });
+    } catch (error) {
+      console.error("Error submitting weapon request:", error);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -56,9 +103,11 @@ const WeaponRequest = () => {
               fontWeight: "bold",
             }}
           >
-            Weapon name
+            {selectedWeaponType}
           </Text>
-          <Text style={{ color: colors.white, fontSize: 16 }}>Serial no</Text>
+          <Text style={{ color: colors.white, fontSize: 16 }}>
+            {selectedSerialNo}
+          </Text>
         </ImageBackground>
 
         <Text
@@ -109,7 +158,7 @@ const WeaponRequest = () => {
             <Text
               style={{ color: colors.text, fontSize: 16, fontWeight: "400" }}
             >
-              Issuing Date: {new Date().toLocaleDateString()}
+              Registered Date: {formatDate(params.registerDate)}
             </Text>
           </View>
           <View style={styles.container}>
@@ -130,7 +179,7 @@ const WeaponRequest = () => {
             <Text
               style={{ color: colors.text, fontSize: 16, fontWeight: "400" }}
             >
-              Return Date: {new Date().toLocaleDateString()}
+              Last Updated: {formatDate(params.updatedDate)}
             </Text>
           </View>
           <View style={styles.container}>
@@ -141,12 +190,26 @@ const WeaponRequest = () => {
             <Text
               style={{ color: colors.text, fontSize: 16, fontWeight: "400" }}
             >
-              Notes: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+              Status: {selectedStatus}
             </Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Ionicons name="document-outline" color={colors.text} size={25} />
+            <TextInput
+              placeholder="Enter request note"
+              value={requestNote}
+              onChangeText={setRequestNote}
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: 10,
+                fontSize: 16,
+                width: "100%",
+              }}
+            />
           </View>
         </View>
         <Pressable
-          onPress={() => console.log("Submit request")}
+          onPress={() => handleSubmit()}
           style={{
             backgroundColor: colors.primary,
             padding: 10,

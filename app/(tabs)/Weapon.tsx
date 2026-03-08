@@ -1,13 +1,32 @@
 import WeaponCard from "@/src/components/WeaponCard";
+import { getWeaponByOfficer } from "@/src/services/weapon/weaponService";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { router } from "expo-router";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Weapon = () => {
   const { colors } = useTheme();
+  const [weapons, setWeapons] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const getAssignedWeapons = async () => {
+    setLoading(true);
+    try {
+      const weapons = await getWeaponByOfficer(1);
+      setWeapons(weapons);
+    } catch (error) {
+      console.error("Error fetching assigned weapons:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    getAssignedWeapons();
+  }, []);
 
   return (
     <SafeAreaView
@@ -36,7 +55,24 @@ const Weapon = () => {
           <Text style={{ color: colors.text, fontSize: 18 }}>
             Assigned Firearms
           </Text>
-          <WeaponCard />
+          {loading ? (
+            <Text style={{ color: colors.text, fontSize: 16 }}>Loading...</Text>
+          ) : weapons.length === 0 ? (
+            <Text style={{ color: colors.text, fontSize: 16 }}>
+              No assigned firearms.
+            </Text>
+          ) : (
+            weapons.map((weapon) => (
+              <WeaponCard
+                key={weapon.id}
+                name={weapon.name}
+                status={weapon.status}
+                ammoCount={weapon.ammoCount}
+                totalAmmo={weapon.totalAmmo}
+                dueDate={weapon.dueDate}
+              />
+            ))
+          )}
         </View>
         <View>
           <Text style={{ color: colors.text, fontSize: 18 }}>

@@ -19,6 +19,10 @@ const WeaponCard = ({
   dueDate,
 }: WeaponCardProps) => {
   const { colors } = useTheme();
+  const today = new Date();
+  const dueDateObj = new Date(dueDate);
+  const isOverdue = dueDateObj < today;
+
   return (
     <View
       style={{
@@ -98,7 +102,9 @@ const WeaponCard = ({
             marginTop: 10,
           }}
         >
-          <Text>{`Due Date: ${dueDate}`}</Text>
+          <Text style={{ color: isOverdue ? colors.danger : colors.text }}>
+            {`Due Date: ${dueDate}`}
+          </Text>
           <Pressable onPress={() => console.log("Open details")}>
             <Ionicons name="chevron-forward" color={colors.text} size={24} />
           </Pressable>

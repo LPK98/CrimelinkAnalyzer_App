@@ -1,6 +1,13 @@
 import { useTheme } from "@/src/theme/ThemeProvider";
 import { router, useLocalSearchParams } from "expo-router";
-import { Pressable, Text, View, StyleSheet, TextInput } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+  StyleSheet,
+  TextInput,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { ImageBackground } from "expo-image";
@@ -10,6 +17,7 @@ import SimpleLineIcons from "react-native-vector-icons/SimpleLineIcons";
 import { useState } from "react";
 import { submitWeaponRequest } from "@/src/services/weapon/weaponService";
 import { useAuth } from "@/src/hooks/useAuth";
+import PopupWindow from "@/src/components/UI/PopupWindow";
 
 type WeaponRouteParams = {
   serialNo?: string;
@@ -24,6 +32,8 @@ const WeaponRequest = () => {
   const { user } = useAuth();
   const [ammoCount, setAmmoCount] = useState(0);
   const [requestNote, setRequestNote] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const params = useLocalSearchParams<WeaponRouteParams>();
 
   const selectedWeaponType = params.weaponType ?? "Unknown Weapon";
@@ -38,6 +48,8 @@ const WeaponRequest = () => {
   };
   const handleSubmit = async () => {
     try {
+      setLoading(true);
+
       const requestedById =
         typeof user?.id === "string" ? Number(user.id) : user?.id;
 
@@ -55,9 +67,19 @@ const WeaponRequest = () => {
         requestNote,
         requestedById,
       });
+
+      setShowSuccessPopup(true);
     } catch (error) {
       console.error("Error submitting weapon request:", error);
+      alert("Failed to submit request. Please try again.");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleSuccessAcknowledge = () => {
+    setShowSuccessPopup(false);
+    router.replace("/Weapon");
   };
 
   return (
@@ -210,12 +232,14 @@ const WeaponRequest = () => {
         </View>
         <Pressable
           onPress={() => handleSubmit()}
+          disabled={loading}
           style={{
             backgroundColor: colors.primary,
             padding: 10,
             borderRadius: 10,
             marginTop: 20,
             alignItems: "center",
+            opacity: loading ? 0.6 : 1,
           }}
         >
           <Text style={{ color: "#fff", fontWeight: "bold" }}>
@@ -223,6 +247,60 @@ const WeaponRequest = () => {
           </Text>
         </Pressable>
       </View>
+
+      {loading && !showSuccessPopup && (
+        <PopupWindow>
+          <View style={{ alignItems: "center", gap: 10 }}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={{ color: colors.text, fontWeight: "600" }}>
+              Submitting request...
+            </Text>
+          </View>
+        </PopupWindow>
+      )}
+
+      {showSuccessPopup && (
+        <PopupWindow>
+          <View style={{ alignItems: "center", gap: 12 }}>
+            <Ionicons
+              name="checkmark-circle-outline"
+              size={48}
+              color={colors.primary}
+            />
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: 18,
+                fontWeight: "700",
+                textAlign: "center",
+              }}
+            >
+              Request Submitted
+            </Text>
+            <Text
+              style={{
+                color: colors.text,
+                fontSize: 14,
+                textAlign: "center",
+              }}
+            >
+              Your firearm request was submitted successfully.
+            </Text>
+            <Pressable
+              onPress={handleSuccessAcknowledge}
+              style={{
+                backgroundColor: colors.primary,
+                paddingVertical: 10,
+                paddingHorizontal: 24,
+                borderRadius: 10,
+                marginTop: 6,
+              }}
+            >
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Okay</Text>
+            </Pressable>
+          </View>
+        </PopupWindow>
+      )}
     </SafeAreaView>
   );
 };

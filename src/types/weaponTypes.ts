@@ -21,6 +21,15 @@ export type WeaponRequestType = {
   requestedById?: number;
   requestNote?: string;
   status?: string;
-  requestedAt?: Date;
-  resolvedAt?: Date;
+  requestedAt?: string | Date;
+  resolvedAt?: string | Date;
+};
+
+export type AssignedWeapon = {
+  id: number | string;
+  weaponType?: string;
+  status?: string;
+  ammoCount?: number;
+  totalAmmo?: number;
+  dueDate?: string;
 };

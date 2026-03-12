@@ -32,3 +32,13 @@ export const submitWeaponRequest = async (
     throw error;
   }
 };
+
+export const getWeaponRequestsByOfficer = async (userId: number) => {
+  try {
+    const res = await api.get(`/api/weapon/requests/user/${userId}`);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching user's weapon requests:", error);
+    throw error;
+  }
+};

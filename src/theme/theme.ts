@@ -9,6 +9,7 @@ export const theme = {
     card: "#F3F4F6",
     border: "#E5E7EB",
     white: "#FFFFFF",
+    danger: "#FF3B30",
   },
   dark: {
     background: "#0B0C1A",

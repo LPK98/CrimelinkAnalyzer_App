@@ -48,13 +48,17 @@ const Dashboard = () => {
   }, [isSidebarOpen, overlayOpacity, slideX]);
 
   const menuItems: { name: string; route: Href; icon: any }[] = [
-    {
-      name: "Face Recognition",
-      route: "/(tabs)/FaceDetection",
-      icon: icons.faceRecognition,
-    },
+    // {
+    //   name: "Face Recognition",
+    //   route: "/(tabs)/FaceDetection",
+    //   icon: icons.faceRecognition,
+    // },  //REMOVE: Not implemented yet
     { name: "Weapon Management", route: "/(tabs)/Weapon", icon: icons.weapon },
-    { name: "Number Plates", route: "/(tabs)/Plate", icon: icons.numberPlate },
+    {
+      name: "Number Plates Lookup",
+      route: "/(tabs)/Plate",
+      icon: icons.numberPlate,
+    },
     { name: "Duty Management", route: "/(tabs)/Duty", icon: icons.duty },
     { name: "Safety Zone", route: "/SafetyZone", icon: icons.safetyZone },
     { name: "Schedule", route: "/Dashboard", icon: icons.schedule },
@@ -99,43 +103,72 @@ const Dashboard = () => {
               onPress={logout}
               style={{
                 marginTop: 24,
-                backgroundColor: "#ef4444",
+                backgroundColor: colors.danger,
                 borderRadius: 12,
                 paddingVertical: 12,
+                paddingHorizontal: 24,
                 alignItems: "center",
               }}
             >
-              <Text style={{ color: "#fff", fontSize: 16, fontWeight: 600 }}>
+              <Text
+                style={{ color: colors.white, fontSize: 16, fontWeight: "600" }}
+              >
                 Logout
               </Text>
             </Pressable>
           </View>
 
           {/* Menu buttons */}
-          <View style={styles.menuContainer}>
+          <View
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              paddingHorizontal: 16,
+              backgroundColor: colors.card,
+              paddingTop: 20,
+              borderTopLeftRadius: 38,
+              borderTopRightRadius: 38,
+              borderTopWidth: 0.5,
+              borderColor: colors.border,
+              elevation: 12,
+              shadowColor: colors.secondary,
+              shadowOffset: { width: 0, height: -3 },
+              shadowOpacity: 0.8,
+              shadowRadius: 8,
+            }}
+          >
             <FlatList
               data={menuItems}
               numColumns={3}
               keyExtractor={(item) => item.name}
-              columnWrapperStyle={{
-                justifyContent: "space-between",
-                marginBottom: 16,
-                gap: 16,
-              }}
+              contentContainerStyle={styles.menuListContent}
+              columnWrapperStyle={styles.menuRow}
               renderItem={({ item, index }) => (
                 <Pressable
                   key={index}
                   style={styles.menuButton}
                   onPress={() => router.replace(item.route)}
                 >
-                  <View style={styles.iconContainer}>
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      {
+                        backgroundColor: colors.iconSurface,
+                        borderColor: colors.border,
+                      },
+                    ]}
+                  >
                     <Image
-                      style={{ width: 40, height: 40, marginBottom: 8 }}
+                      style={styles.menuIcon}
                       source={item.icon}
                       resizeMode="contain"
                     />
                   </View>
-                  <Text style={styles.menuText}>{item.name}</Text>
+                  <Text style={[styles.menuText, { color: colors.text }]}>
+                    {item.name}
+                  </Text>
                 </Pressable>
               )}
             />
@@ -154,7 +187,7 @@ const Dashboard = () => {
           }}
         >
           <Pressable
-            style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.35)" }}
+            style={{ flex: 1, backgroundColor: colors.overlay }}
             onPress={closeSidebar}
           />
         </Animated.View>
@@ -166,7 +199,7 @@ const Dashboard = () => {
             bottom: 0,
             width: SIDEBAR_WIDTH,
             transform: [{ translateX: slideX }],
-            backgroundColor: "white",
+            backgroundColor: colors.sidebarSurface,
             paddingTop: 16,
             paddingHorizontal: 12,
             shadowColor: "#000",
@@ -183,29 +216,45 @@ const Dashboard = () => {
 };
 
 const styles = StyleSheet.create({
-  menuContainer: {
-    position: "absolute",
-    bottom: 16,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
+  menuContainer: {},
+  menuListContent: {
+    paddingBottom: 8,
+  },
+  menuRow: {
+    justifyContent: "space-between",
+    marginBottom: 16,
+    gap: 12,
   },
   menuButton: {
+    flex: 1,
+    minHeight: 116,
     alignItems: "center",
     justifyContent: "center",
-    height: 112,
-    width: 112,
+    paddingHorizontal: 6,
   },
   iconContainer: {
-    backgroundColor: "#fff",
-    padding: 8,
+    width: 64,
+    height: 64,
+    marginBottom: 8,
     borderRadius: 16,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+  },
+  menuIcon: {
+    width: 40,
+    height: 40,
   },
   menuText: {
-    color: "#181B41",
     textAlign: "center",
     fontWeight: "500",
     fontSize: 14,
+    lineHeight: 18,
   },
 });
 

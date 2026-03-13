@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import React from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DutyToggleScreen from "./DutyToggleScreen";
@@ -28,7 +28,9 @@ export default function Settings() {
       <Text style={{ color: colors.text, fontSize: 24, fontWeight: "bold" }}>
         Settings
       </Text>
-      <DutyToggleScreen />
+      <View>
+        <DutyToggleScreen />
+      </View>
       <ThemeToggle />
     </SafeAreaView>
   );

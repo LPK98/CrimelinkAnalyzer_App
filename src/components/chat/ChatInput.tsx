@@ -54,11 +54,15 @@ const ChatInput = ({
 
   // ─── Text Sending ───
 
-  const handleSendText = () => {
+  const handleSendText = async () => {
     const trimmed = message.trim();
     if (trimmed.length === 0) return;
-    onSendText(trimmed);
-    setMessage("");
+    try {
+      await onSendText(trimmed);
+      setMessage("");
+    } catch (error: unknown) {
+      Alert.alert("Send Failed", getErrorMessage(error));
+    }
   };
 
   // ─── Image Picking ───
@@ -88,7 +92,7 @@ const ChatInput = ({
         setIsUploading(true);
         try {
           const url = await uploadImage(result.assets[0].uri);
-          onSendImage(url);
+          await onSendImage(url);
         } catch (error: unknown) {
           Alert.alert("Upload Failed", getErrorMessage(error));
         } finally {
@@ -124,7 +128,7 @@ const ChatInput = ({
         setIsUploading(true);
         try {
           const url = await uploadImage(result.assets[0].uri);
-          onSendImage(url);
+          await onSendImage(url);
         } catch (error: unknown) {
           Alert.alert("Upload Failed", getErrorMessage(error));
         } finally {
@@ -196,7 +200,7 @@ const ChatInput = ({
         setIsUploading(true);
         try {
           const url = await uploadAudio(uri);
-          onSendAudio(url);
+          await onSendAudio(url);
         } catch (error: unknown) {
           Alert.alert("Upload Failed", getErrorMessage(error));
         } finally {

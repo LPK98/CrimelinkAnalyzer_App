@@ -1,14 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import {
-  addDoc,
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  where,
-} from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -24,45 +15,20 @@ import {
   type ListRenderItem,
 } from "react-native";
 
-import { db } from "../../firebaseConfig";
 import ChatInput from "../../src/components/chat/ChatInput";
 import MessageBubble from "../../src/components/chat/MessageBubble";
 import { useAuth } from "../../src/hooks/useAuth";
-
-type ChatMessageType = "text" | "image" | "audio";
-
-type ChatMessage = {
-  id: string;
-  type: ChatMessageType;
-  text: string | null;
-  mediaUrl: string | null;
-  senderId: string;
-  senderEmail: string;
-  recipientId: string;
-  recipientEmail: string;
-  conversationId: string;
-  timestamp: unknown;
-};
+import {
+  buildConversationId,
+  sendChatMessage,
+  subscribeToConversationMessages,
+  type ChatMessage,
+  type ChatMessageType,
+} from "../../src/services/chatService";
 
 type FailedSendPayload = {
   type: ChatMessageType;
   payload: { text: string | null; mediaUrl: string | null };
-};
-
-const buildConversationId = (userA: string, userB: string): string => {
-  return [userA, userB].sort().join("_");
-};
-
-const isParticipantPair = (
-  senderId: string,
-  recipientId: string,
-  currentUserId: string,
-  targetUserId: string,
-): boolean => {
-  return (
-    (senderId === currentUserId && recipientId === targetUserId) ||
-    (senderId === targetUserId && recipientId === currentUserId)
-  );
 };
 
 const getErrorMessage = (error: unknown): string => {
@@ -105,7 +71,7 @@ const ChatScreen = () => {
       : null;
 
   useEffect(() => {
-    if (!conversationId) {
+    if (!appUserId || !recipientId || !conversationId) {
       setMessages([]);
       setIsLoadingMessages(false);
       return;
@@ -113,67 +79,18 @@ const ChatScreen = () => {
 
     setIsLoadingMessages(true);
 
-    const messagesRef = collection(db, "messages");
-    const q = query(
-      messagesRef,
-      where("conversationId", "==", conversationId),
-      orderBy("timestamp", "asc"),
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const messageList: ChatMessage[] = snapshot.docs.flatMap((doc) => {
-          const data = doc.data() as Partial<ChatMessage>;
-          const senderId = data.senderId ? String(data.senderId) : "";
-          const targetRecipientId = data.recipientId
-            ? String(data.recipientId)
-            : "";
-          const docConversationId = data.conversationId ?? "";
-
-          if (!docConversationId) {
-            return [];
-          }
-
-          if (!appUserId || !recipientId) {
-            return [];
-          }
-
-          if (
-            !isParticipantPair(
-              senderId,
-              targetRecipientId,
-              appUserId,
-              recipientId,
-            )
-          ) {
-            return [];
-          }
-
-          const message: ChatMessage = {
-            id: doc.id,
-            type: data.type ?? "text",
-            text: data.text ?? null,
-            mediaUrl: data.mediaUrl ?? null,
-            senderId,
-            senderEmail: data.senderEmail ?? "",
-            recipientId: targetRecipientId,
-            recipientEmail: data.recipientEmail ?? "",
-            conversationId: docConversationId,
-            timestamp: data.timestamp ?? null,
-          };
-
-          return [message];
-        });
-
+    const unsubscribe = subscribeToConversationMessages({
+      appUserId,
+      recipientId,
+      onMessages: (messageList) => {
         setMessages(messageList);
         setIsLoadingMessages(false);
       },
-      (error) => {
+      onError: (error) => {
         console.error("Error listening to messages:", error);
         setIsLoadingMessages(false);
       },
-    );
+    });
 
     return () => unsubscribe();
   }, [appUserId, conversationId, recipientId]);
@@ -202,16 +119,14 @@ const ChatScreen = () => {
       setSendError(null);
       setFailedPayload(null);
 
-      await addDoc(collection(db, "messages"), {
-        type,
-        text: payload.text,
-        mediaUrl: payload.mediaUrl,
+      await sendChatMessage({
         senderId: appUserId,
         senderEmail: appUserEmail,
         recipientId,
         recipientEmail,
-        conversationId,
-        timestamp: serverTimestamp(),
+        type,
+        text: payload.text,
+        mediaUrl: payload.mediaUrl,
       });
     } catch (error) {
       console.error(`Error sending ${type} message:`, error);

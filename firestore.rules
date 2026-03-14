@@ -2,9 +2,42 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function requesterMatches(userId) {
+      return isSignedIn() && (
+        userId == request.auth.uid ||
+        userId == request.auth.token.userId ||
+        userId == request.auth.token.officerId
+      );
+    }
+
+    function isParticipant(senderId, recipientId) {
+      return requesterMatches(senderId) || requesterMatches(recipientId);
+    }
+
+    match /messages/{messageId} {
+      allow read: if isParticipant(resource.data.senderId, resource.data.recipientId);
+
+      allow create: if isSignedIn()
+                    && request.resource.data.type in ['text', 'image', 'audio']
+                    && request.resource.data.conversationId is string
+                    && request.resource.data.senderId is string
+                    && request.resource.data.recipientId is string
+                    && request.resource.data.senderId != request.resource.data.recipientId
+                    && isParticipant(request.resource.data.senderId, request.resource.data.recipientId)
+                    && (
+                      (request.resource.data.type == 'text' && request.resource.data.text is string) ||
+                      (request.resource.data.type in ['image', 'audio'] && request.resource.data.mediaUrl is string)
+                    );
+
+      allow update, delete: if false;
+    }
+
     match /{document=**} {
-      // Temporarily allowing all access for development to fix the permission issues
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }

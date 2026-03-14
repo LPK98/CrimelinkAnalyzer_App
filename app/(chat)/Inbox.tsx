@@ -23,7 +23,6 @@ import { useAuth } from "../../src/hooks/useAuth";
 import { fetchChatUsers, type ChatUser } from "../../src/services/chatService";
 
 type SkeletonItem = { id: string };
-type InboxListItem = ChatUser | SkeletonItem;
 
 const SKELETON_ROWS: SkeletonItem[] = Array.from({ length: 5 }, (_, index) => ({
   id: `skeleton-${index}`,
@@ -33,10 +32,6 @@ const getInitials = (name: string): string => {
   const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
   if (parts.length === 0) return "NA";
   return parts.map((part) => part[0].toUpperCase()).join("");
-};
-
-const isChatUser = (item: InboxListItem): item is ChatUser => {
-  return "name" in item && "email" in item;
 };
 
 const formatLastActivity = (timestamp: number | null | undefined): string => {
@@ -192,15 +187,12 @@ const Inbox = () => {
   };
 
   const renderSkeleton = () => (
-    <Animated.View
-      className="rounded-2xl bg-glass border border-stroke px-4 py-4 mb-3"
-      style={{ opacity: skeletonOpacity }}
-    >
-      <View className="flex-row items-center">
-        <View className="h-12 w-12 rounded-2xl bg-surface" />
-        <View className="ml-3 flex-1">
-          <View className="h-3 w-32 rounded-full bg-surface" />
-          <View className="mt-2 h-3 w-48 rounded-full bg-surface" />
+    <Animated.View style={[styles.skeletonCard, { opacity: skeletonOpacity }]}>
+      <View style={styles.skeletonRow}>
+        <View style={styles.skeletonAvatar} />
+        <View style={styles.skeletonTextGroup}>
+          <View style={styles.skeletonTitle} />
+          <View style={styles.skeletonPreview} />
         </View>
       </View>
     </Animated.View>
@@ -253,7 +245,7 @@ const Inbox = () => {
       <View style={styles.sideGlow} />
 
       <FlatList
-        data={(loading ? SKELETON_ROWS : filteredUsers) as InboxListItem[]}
+        data={loading ? SKELETON_ROWS : filteredUsers}
         keyExtractor={(item, index) => item?.id ?? `chat-${index}`}
         refreshing={refreshing}
         onRefresh={onRefresh}
@@ -261,10 +253,10 @@ const Inbox = () => {
         maxToRenderPerBatch={10}
         windowSize={7}
         renderItem={({ item }) => {
-          if (!isChatUser(item)) {
+          if (loading) {
             return renderSkeleton();
           }
-          return renderChat({ item });
+          return renderChat({ item: item as ChatUser });
         }}
         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         ListHeaderComponent={
@@ -325,34 +317,42 @@ const Inbox = () => {
               <Text className="text-textSecondary text-xs mb-3 font-semibold uppercase tracking-wide">
                 Active now
               </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.activeRow}
-              >
-                {activeUsers.map((activeUser) => (
-                  <Pressable
-                    key={activeUser.id}
-                    className="mr-3 items-center"
-                    onPress={() => openConversation(activeUser)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Start chat with ${activeUser.name}`}
-                  >
-                    <View className="h-14 w-14 rounded-2xl bg-card items-center justify-center border border-stroke">
-                      <Text className="text-textPrimary font-semibold">
-                        {getInitials(activeUser.name)}
-                      </Text>
-                      <View className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-ink" />
-                    </View>
-                    <Text
-                      className="text-textMuted text-xs mt-2"
-                      numberOfLines={1}
+              {loading ? (
+                <View style={styles.activeLoadingHint}>
+                  <Text className="text-textMuted text-xs">
+                    Loading active contacts...
+                  </Text>
+                </View>
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.activeRow}
+                >
+                  {activeUsers.map((activeUser) => (
+                    <Pressable
+                      key={activeUser.id}
+                      className="mr-3 items-center"
+                      onPress={() => openConversation(activeUser)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Start chat with ${activeUser.name}`}
                     >
-                      {activeUser.name}
-                    </Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
+                      <View className="h-14 w-14 rounded-2xl bg-card items-center justify-center border border-stroke">
+                        <Text className="text-textPrimary font-semibold">
+                          {getInitials(activeUser.name)}
+                        </Text>
+                        <View className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-ink" />
+                      </View>
+                      <Text
+                        className="text-textMuted text-xs mt-2"
+                        numberOfLines={1}
+                      >
+                        {activeUser.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              )}
             </View>
 
             <View className="mt-6 flex-row items-center justify-between">
@@ -387,6 +387,42 @@ const Inbox = () => {
 export default Inbox;
 
 const styles = StyleSheet.create({
+  skeletonCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(91,124,255,0.2)",
+    backgroundColor: "rgba(26, 35, 68, 0.62)",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    marginBottom: 12,
+  },
+  skeletonRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  skeletonAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: "rgba(120, 137, 190, 0.35)",
+  },
+  skeletonTextGroup: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  skeletonTitle: {
+    height: 10,
+    width: "42%",
+    borderRadius: 999,
+    backgroundColor: "rgba(120, 137, 190, 0.4)",
+  },
+  skeletonPreview: {
+    marginTop: 10,
+    height: 10,
+    width: "68%",
+    borderRadius: 999,
+    backgroundColor: "rgba(120, 137, 190, 0.28)",
+  },
   topGlow: {
     position: "absolute",
     top: 0,
@@ -406,5 +442,9 @@ const styles = StyleSheet.create({
   },
   activeRow: {
     paddingRight: 12,
+  },
+  activeLoadingHint: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
   },
 });

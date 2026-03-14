@@ -12,7 +12,7 @@ import {
   uploadBytes,
   type UploadMetadata,
 } from "firebase/storage";
-import { storage } from "../../firebaseConfig";
+import { auth, storage } from "../../firebaseConfig";
 
 type MediaFolder = "images" | "audio";
 type ClosableBlob = Blob & { close?: () => void };
@@ -60,8 +60,14 @@ export const uploadMedia = async (
     // Convert local file URI to blob via XHR (React Native compatible)
     const blob = await uriToBlob(uri);
 
+    // Scope uploads per authenticated user to align with storage rules.
+    const ownerId = auth.currentUser?.uid;
+    if (!ownerId) {
+      throw new Error("You must be signed in to upload media.");
+    }
+
     // Create a unique filename using timestamp
-    const filename = `${folder}/${Date.now()}_${Math.random()
+    const filename = `${folder}/${ownerId}/${Date.now()}_${Math.random()
       .toString(36)
       .substring(7)}`;
     const storageRef = ref(storage, filename);

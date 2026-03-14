@@ -1,13 +1,62 @@
 import {
+  addDoc,
   collection,
   getDocs,
   limit,
+  onSnapshot,
   orderBy,
   query,
+  serverTimestamp,
   where,
+  type QueryDocumentSnapshot,
+  type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../../firebaseConfig";
 import { api } from "../api/api";
+
+export type ChatMessageType = "text" | "image" | "audio";
+
+export type ChatMessage = {
+  id: string;
+  type: ChatMessageType;
+  text: string | null;
+  mediaUrl: string | null;
+  senderId: string;
+  senderEmail: string;
+  recipientId: string;
+  recipientEmail: string;
+  conversationId: string;
+  timestamp: unknown;
+};
+
+type RawChatMessage = {
+  type?: ChatMessageType;
+  text?: string | null;
+  mediaUrl?: string | null;
+  senderId?: string;
+  senderEmail?: string;
+  recipientId?: string;
+  recipientEmail?: string;
+  conversationId?: string;
+  timestamp?: unknown;
+};
+
+export type SendChatMessageInput = {
+  senderId: string;
+  senderEmail: string;
+  recipientId: string;
+  recipientEmail: string;
+  type: ChatMessageType;
+  text: string | null;
+  mediaUrl: string | null;
+};
+
+type SubscribeToConversationParams = {
+  appUserId: string;
+  recipientId: string;
+  onMessages: (messages: ChatMessage[]) => void;
+  onError?: (error: unknown) => void;
+};
 
 export type ChatUser = {
   id: string;
@@ -47,6 +96,10 @@ type ActivityByCounterpart = Record<
 type EndpointFailure = {
   endpoint: (typeof CANDIDATE_USER_ENDPOINTS)[number];
   reason: unknown;
+};
+
+export const buildConversationId = (userA: string, userB: string): string => {
+  return [userA, userB].sort().join("_");
 };
 
 const ID_SOURCE_PRIORITY: Record<"userId" | "id" | "officerId", number> = {
@@ -111,6 +164,110 @@ const getMessagePreview = (
   if (type === "image") return "Photo";
   if (type === "audio") return "Voice message";
   return "Message";
+};
+
+const isParticipantPair = (
+  senderId: string,
+  recipientId: string,
+  currentUserId: string,
+  targetUserId: string,
+): boolean => {
+  return (
+    (senderId === currentUserId && recipientId === targetUserId) ||
+    (senderId === targetUserId && recipientId === currentUserId)
+  );
+};
+
+const parseMessageDoc = (
+  doc: QueryDocumentSnapshot,
+  appUserId: string,
+  recipientId: string,
+): ChatMessage | null => {
+  const data = doc.data() as RawChatMessage;
+  const senderId = data.senderId ? String(data.senderId) : "";
+  const targetRecipientId = data.recipientId ? String(data.recipientId) : "";
+  const conversationId =
+    typeof data.conversationId === "string" ? data.conversationId : "";
+
+  if (!conversationId) {
+    return null;
+  }
+
+  if (!isParticipantPair(senderId, targetRecipientId, appUserId, recipientId)) {
+    return null;
+  }
+
+  return {
+    id: doc.id,
+    type: data.type ?? "text",
+    text: data.text ?? null,
+    mediaUrl: data.mediaUrl ?? null,
+    senderId,
+    senderEmail: data.senderEmail ?? "",
+    recipientId: targetRecipientId,
+    recipientEmail: data.recipientEmail ?? "",
+    conversationId,
+    timestamp: data.timestamp ?? null,
+  };
+};
+
+export const subscribeToConversationMessages = ({
+  appUserId,
+  recipientId,
+  onMessages,
+  onError,
+}: SubscribeToConversationParams): Unsubscribe => {
+  const conversationId = buildConversationId(appUserId, recipientId);
+  const messagesRef = collection(db, "messages");
+
+  const messagesQuery = query(
+    messagesRef,
+    where("conversationId", "==", conversationId),
+    orderBy("timestamp", "asc"),
+  );
+
+  return onSnapshot(
+    messagesQuery,
+    (snapshot) => {
+      const messages = snapshot.docs
+        .map((doc) => parseMessageDoc(doc, appUserId, recipientId))
+        .filter((message): message is ChatMessage => message !== null);
+
+      onMessages(messages);
+    },
+    (error) => {
+      if (onError) {
+        onError(error);
+        return;
+      }
+
+      console.error("Error listening to conversation messages:", error);
+    },
+  );
+};
+
+export const sendChatMessage = async ({
+  senderId,
+  senderEmail,
+  recipientId,
+  recipientEmail,
+  type,
+  text,
+  mediaUrl,
+}: SendChatMessageInput): Promise<void> => {
+  const conversationId = buildConversationId(senderId, recipientId);
+
+  await addDoc(collection(db, "messages"), {
+    type,
+    text,
+    mediaUrl,
+    senderId,
+    senderEmail,
+    recipientId,
+    recipientEmail,
+    conversationId,
+    timestamp: serverTimestamp(),
+  });
 };
 
 const normalizeUser = (raw: unknown): ChatUser | null => {

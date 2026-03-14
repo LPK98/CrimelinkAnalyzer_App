@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   addDoc,
@@ -13,6 +14,8 @@ import {
   Alert,
   FlatList,
   KeyboardAvoidingView,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   StyleSheet,
   Text,
@@ -41,6 +44,11 @@ type ChatMessage = {
   timestamp: unknown;
 };
 
+type FailedSendPayload = {
+  type: ChatMessageType;
+  payload: { text: string | null; mediaUrl: string | null };
+};
+
 const buildConversationId = (userA: string, userB: string): string => {
   return [userA, userB].sort().join("_");
 };
@@ -66,6 +74,13 @@ const getErrorMessage = (error: unknown): string => {
 
 const ChatScreen = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [failedPayload, setFailedPayload] = useState<FailedSendPayload | null>(
+    null,
+  );
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
   const { user, logout } = useAuth();
   const params = useLocalSearchParams<{
@@ -92,8 +107,11 @@ const ChatScreen = () => {
   useEffect(() => {
     if (!conversationId) {
       setMessages([]);
+      setIsLoadingMessages(false);
       return;
     }
+
+    setIsLoadingMessages(true);
 
     const messagesRef = collection(db, "messages");
     const q = query(
@@ -149,9 +167,11 @@ const ChatScreen = () => {
         });
 
         setMessages(messageList);
+        setIsLoadingMessages(false);
       },
       (error) => {
         console.error("Error listening to messages:", error);
+        setIsLoadingMessages(false);
       },
     );
 
@@ -178,6 +198,10 @@ const ChatScreen = () => {
     }
 
     try {
+      setIsSending(true);
+      setSendError(null);
+      setFailedPayload(null);
+
       await addDoc(collection(db, "messages"), {
         type,
         text: payload.text,
@@ -191,8 +215,25 @@ const ChatScreen = () => {
       });
     } catch (error) {
       console.error(`Error sending ${type} message:`, error);
-      Alert.alert("Error", "Failed to send message. Please try again.");
+      const message =
+        "Failed to send message. Check your connection and retry.";
+      setSendError(message);
+      setFailedPayload({ type, payload });
+    } finally {
+      setIsSending(false);
     }
+  };
+
+  const retryFailedMessage = async () => {
+    if (!failedPayload) return;
+    await sendMessage(failedPayload.type, failedPayload.payload);
+  };
+
+  const onMessagesScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const distanceToBottom =
+      contentSize.height - (layoutMeasurement.height + contentOffset.y);
+    setShowJumpToLatest(distanceToBottom > 120);
   };
 
   const handleSendText = async (text: string) => {
@@ -240,16 +281,39 @@ const ChatScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.replace("/(chat)/Inbox")}
-          style={styles.backButton}
-        >
-          <Text style={styles.backText}>Back</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{recipientName}</Text>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity
+            onPress={() => router.replace("/(chat)/Inbox")}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Go back to inbox"
+          >
+            <Ionicons name="chevron-back" size={16} color="#5B7CFF" />
+            <Text style={styles.backText}>Inbox</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {recipientName}
+          </Text>
+          {recipientEmail ? (
+            <Text style={styles.headerSubtitle} numberOfLines={1}>
+              {recipientEmail}
+            </Text>
+          ) : null}
+        </View>
+
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={handleLogout}
+            style={styles.logoutButton}
+            accessibilityRole="button"
+            accessibilityLabel="Logout"
+          >
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <KeyboardAvoidingView
@@ -263,25 +327,83 @@ const ChatScreen = () => {
           renderItem={renderMessage}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messagesList}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: true })
-          }
+          onContentSizeChange={() => {
+            if (!showJumpToLatest) {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }
+          }}
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          onScroll={onMessagesScroll}
+          scrollEventThrottle={16}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No messages yet.</Text>
-              <Text style={styles.emptySubtext}>
-                Start a secure conversation with {recipientName}.
+              <Text style={styles.emptyText}>
+                {isLoadingMessages ? "Loading messages..." : "No messages yet"}
               </Text>
+              {isLoadingMessages ? (
+                <Text style={styles.emptySubtext}>
+                  Syncing conversation history.
+                </Text>
+              ) : (
+                <>
+                  <Text style={styles.emptySubtext}>
+                    Start a secure conversation with {recipientName}.
+                  </Text>
+                  <Text style={styles.emptyHint}>
+                    End-to-end protected channel
+                  </Text>
+                </>
+              )}
             </View>
           }
         />
+
+        {sendError ? (
+          <View style={styles.errorBar}>
+            <Ionicons name="alert-circle-outline" size={16} color="#FCA5A5" />
+            <Text style={styles.errorText}>{sendError}</Text>
+            <TouchableOpacity
+              onPress={retryFailedMessage}
+              style={styles.errorAction}
+            >
+              <Text style={styles.errorActionText}>Retry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setSendError(null);
+                setFailedPayload(null);
+              }}
+              style={styles.errorDismiss}
+            >
+              <Ionicons name="close" size={14} color="#FCA5A5" />
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
+        {showJumpToLatest ? (
+          <TouchableOpacity
+            style={styles.jumpToLatestButton}
+            onPress={() => {
+              flatListRef.current?.scrollToEnd({ animated: true });
+              setShowJumpToLatest(false);
+            }}
+          >
+            <Ionicons name="arrow-down" size={14} color="#DDE4FF" />
+            <Text style={styles.jumpToLatestText}>Latest</Text>
+          </TouchableOpacity>
+        ) : null}
 
         <ChatInput
           onSendText={handleSendText}
           onSendImage={handleSendImage}
           onSendAudio={handleSendAudio}
         />
+
+        {isSending ? (
+          <View style={styles.sendingStrip}>
+            <Text style={styles.sendingText}>Sending...</Text>
+          </View>
+        ) : null}
       </KeyboardAvoidingView>
     </View>
   );
@@ -291,7 +413,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0B0F1F",
-    padding: 8,
   },
   header: {
     flexDirection: "row",
@@ -299,15 +420,33 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingTop: Platform.OS === "ios" ? 54 : 40,
-    paddingBottom: 12,
+    paddingBottom: 14,
     backgroundColor: "#10162A",
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(91, 124, 255, 0.18)",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
   },
+  headerLeft: {
+    flex: 0,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: 12,
+  },
+  headerRight: {
+    flex: 0,
+    minWidth: 68,
+    alignItems: "flex-end",
+  },
   backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -319,9 +458,14 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: "bold",
+    fontSize: 18,
+    fontWeight: "700",
     color: "#E9ECF8",
+  },
+  headerSubtitle: {
+    fontSize: 12,
+    marginTop: 2,
+    color: "#9AA7D7",
   },
   logoutButton: {
     paddingHorizontal: 14,
@@ -339,7 +483,9 @@ const styles = StyleSheet.create({
   },
   messagesList: {
     flexGrow: 1,
-    paddingVertical: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 12,
+    paddingBottom: 18,
   },
   emptyContainer: {
     flex: 1,
@@ -356,6 +502,71 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#7783B5",
     marginTop: 8,
+  },
+  emptyHint: {
+    fontSize: 12,
+    color: "#5B7CFF",
+    marginTop: 12,
+    fontWeight: "600",
+  },
+  errorBar: {
+    marginHorizontal: 12,
+    marginBottom: 10,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(248, 113, 113, 0.45)",
+    backgroundColor: "rgba(127, 29, 29, 0.35)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  errorText: {
+    color: "#FECACA",
+    fontSize: 12,
+    flex: 1,
+    marginLeft: 8,
+  },
+  errorAction: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  errorActionText: {
+    color: "#DDE4FF",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  errorDismiss: {
+    marginLeft: 4,
+    padding: 2,
+  },
+  jumpToLatestButton: {
+    position: "absolute",
+    right: 16,
+    bottom: 92,
+    borderRadius: 18,
+    backgroundColor: "rgba(21, 30, 56, 0.92)",
+    borderWidth: 1,
+    borderColor: "rgba(91, 124, 255, 0.45)",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  jumpToLatestText: {
+    color: "#DDE4FF",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  sendingStrip: {
+    paddingHorizontal: 12,
+    paddingBottom: 6,
+  },
+  sendingText: {
+    color: "#9AA7D7",
+    fontSize: 12,
+    fontWeight: "600",
   },
 });
 

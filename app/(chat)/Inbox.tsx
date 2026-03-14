@@ -1,11 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Alert,
   Animated,
   FlatList,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -70,13 +77,55 @@ const byRecentActivity = (a: ChatUser, b: ChatUser): number => {
   return a.name.localeCompare(b.name);
 };
 
+const formatLastUpdated = (timestamp: number | null): string => {
+  if (!timestamp) return "Not synced yet";
+  return `Updated ${formatLastActivity(timestamp)} ago`;
+};
+
 const Inbox = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [users, setUsers] = useState<ChatUser[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const shimmer = useRef(new Animated.Value(0.4)).current;
   const currentUserId = user?.id != null ? String(user.id) : undefined;
+
+  const loadUsers = useCallback(
+    async (silent = false) => {
+      if (!currentUserId) {
+        setLoading(false);
+        setRefreshing(false);
+        setLoadError("Your session is not ready. Please log in again.");
+        return;
+      }
+
+      if (silent) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      try {
+        const loadedUsers = await fetchChatUsers(currentUserId);
+        setUsers(loadedUsers);
+        setLoadError(null);
+        setLastUpdatedAt(Date.now());
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Failed to load contacts.";
+        setLoadError(message);
+        Alert.alert("Contacts Unavailable", message);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [currentUserId],
+  );
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -96,52 +145,40 @@ const Inbox = () => {
 
     animation.start();
 
-    let cancelled = false;
-
-    const loadUsers = async () => {
-      try {
-        const loadedUsers = await fetchChatUsers(currentUserId);
-        if (!cancelled) {
-          setUsers(loadedUsers);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          const message =
-            error instanceof Error ? error.message : "Failed to load contacts.";
-          Alert.alert("Contacts Unavailable", message);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
     void loadUsers();
 
     return () => {
-      cancelled = true;
       animation.stop();
     };
-  }, [currentUserId, shimmer]);
+  }, [loadUsers, shimmer]);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setSearchQuery(searchInput.trim());
+    }, 220);
+
+    return () => clearTimeout(timeout);
+  }, [searchInput]);
 
   const skeletonOpacity = useMemo(() => shimmer, [shimmer]);
 
+  const sortedUsers = useMemo(() => {
+    return [...users].sort(byRecentActivity);
+  }, [users]);
+
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    const orderedUsers = [...users].sort(byRecentActivity);
+    if (!query) return sortedUsers;
 
-    if (!query) return orderedUsers;
-
-    return orderedUsers.filter((chatUser) => {
+    return sortedUsers.filter((chatUser) => {
       return (
         chatUser.name.toLowerCase().includes(query) ||
         chatUser.email.toLowerCase().includes(query)
       );
     });
-  }, [searchQuery, users]);
+  }, [searchQuery, sortedUsers]);
 
-  const activeUsers = useMemo(() => filteredUsers.slice(0, 5), [filteredUsers]);
+  const activeUsers = useMemo(() => sortedUsers.slice(0, 8), [sortedUsers]);
 
   const openConversation = (chatUser: ChatUser) => {
     router.push({
@@ -173,6 +210,9 @@ const Inbox = () => {
     <Pressable
       className="rounded-2xl bg-glass border border-stroke px-4 py-3 mb-3 active:opacity-80"
       onPress={() => openConversation(item)}
+      accessibilityRole="button"
+      accessibilityLabel={`Open conversation with ${item.name}`}
+      accessibilityHint={`Last update ${formatLastActivity(item.lastMessageAt)}`}
     >
       <View className="flex-row items-center">
         <View className="h-12 w-12 rounded-2xl bg-card items-center justify-center">
@@ -194,65 +234,84 @@ const Inbox = () => {
             <Text className="text-sm text-textMuted" numberOfLines={1}>
               {getPreviewText(item)}
             </Text>
-            <View className="ml-2 h-2 w-2 rounded-full bg-accent" />
+            {item.lastMessageAt ? (
+              <View className="ml-2 h-2 w-2 rounded-full bg-accent" />
+            ) : null}
           </View>
         </View>
       </View>
     </Pressable>
   );
 
+  const onRefresh = () => {
+    void loadUsers(true);
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-ink">
       <View style={styles.topGlow} />
+      <View style={styles.sideGlow} />
 
       <FlatList
         data={(loading ? SKELETON_ROWS : filteredUsers) as InboxListItem[]}
         keyExtractor={(item, index) => item?.id ?? `chat-${index}`}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={7}
         renderItem={({ item }) => {
           if (!isChatUser(item)) {
             return renderSkeleton();
           }
           return renderChat({ item });
         }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
         ListHeaderComponent={
           <View className="mb-6">
-            <View className="flex-row items-center justify-between">
-              <View>
-                <Text className="text-textPrimary text-2xl font-semibold">
-                  Inbox
-                </Text>
-                <Text className="text-textMuted mt-1">
-                  Secure updates from your field network
-                </Text>
-              </View>
-              <View className="flex-row items-center">
-                <Pressable className="h-10 w-10 rounded-full bg-glass border border-stroke items-center justify-center mr-2">
-                  <Ionicons
-                    name="notifications-outline"
-                    size={18}
-                    color="#E9ECF8"
-                  />
-                </Pressable>
-                <Pressable className="h-10 w-10 rounded-full bg-glass border border-stroke items-center justify-center">
-                  <Ionicons
-                    name="ellipsis-vertical"
-                    size={18}
-                    color="#E9ECF8"
-                  />
-                </Pressable>
-              </View>
+            <View>
+              <Text className="text-textPrimary text-4xl font-bold tracking-tight">
+                Inbox
+              </Text>
+              <Text className="text-textMuted mt-1 text-sm">
+                Encrypted updates across your field network
+              </Text>
+              <Text className="text-accent mt-2 text-xs font-semibold uppercase tracking-wide">
+                {formatLastUpdated(lastUpdatedAt)}
+              </Text>
             </View>
 
-            <View className="mt-5 rounded-2xl">
-              <View className="flex-row items-center px-4 py-3 bg-glass border border-stroke rounded-2xl">
+            {loadError ? (
+              <View className="mt-5 rounded-2xl border border-red-500/40 bg-red-900/25 px-4 py-3">
+                <View className="flex-row items-center">
+                  <Ionicons name="warning-outline" size={16} color="#FCA5A5" />
+                  <Text className="ml-2 flex-1 text-red-100 text-sm">
+                    {loadError}
+                  </Text>
+                </View>
+                <Pressable
+                  className="mt-2 self-start rounded-xl border border-red-300/50 px-3 py-1"
+                  onPress={() => void loadUsers(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel="Retry loading contacts"
+                >
+                  <Text className="text-red-100 text-xs font-semibold">
+                    Retry
+                  </Text>
+                </Pressable>
+              </View>
+            ) : null}
+
+            <View className="mt-5 rounded-3xl">
+              <View className="flex-row items-center px-4 py-3 bg-glass border border-stroke rounded-3xl">
                 <Ionicons name="search" size={18} color="#A5B0D8" />
                 <TextInput
                   placeholder="Search by unit, sector, or keyword"
                   placeholderTextColor="#7783B5"
                   className="ml-3 flex-1 text-textPrimary"
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
+                  value={searchInput}
+                  onChangeText={setSearchInput}
+                  accessibilityLabel="Search conversations"
                 />
                 <Ionicons
                   name="chatbubble-ellipses-outline"
@@ -263,35 +322,46 @@ const Inbox = () => {
             </View>
 
             <View className="mt-6">
-              <Text className="text-textSecondary text-sm mb-3">
+              <Text className="text-textSecondary text-xs mb-3 font-semibold uppercase tracking-wide">
                 Active now
               </Text>
-              <View className="flex-row">
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.activeRow}
+              >
                 {activeUsers.map((activeUser) => (
                   <Pressable
                     key={activeUser.id}
                     className="mr-3 items-center"
                     onPress={() => openConversation(activeUser)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Start chat with ${activeUser.name}`}
                   >
-                    <View className="h-12 w-12 rounded-2xl bg-card items-center justify-center">
+                    <View className="h-14 w-14 rounded-2xl bg-card items-center justify-center border border-stroke">
                       <Text className="text-textPrimary font-semibold">
                         {getInitials(activeUser.name)}
                       </Text>
                       <View className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-ink" />
                     </View>
-                    <Text className="text-textMuted text-xs mt-2">
+                    <Text
+                      className="text-textMuted text-xs mt-2"
+                      numberOfLines={1}
+                    >
                       {activeUser.name}
                     </Text>
                   </Pressable>
                 ))}
-              </View>
+              </ScrollView>
             </View>
 
             <View className="mt-6 flex-row items-center justify-between">
-              <Text className="text-textSecondary text-sm">
+              <Text className="text-textSecondary text-xs font-semibold uppercase tracking-wide">
                 Recent conversations
               </Text>
-              <Text className="text-accent text-xs">View all</Text>
+              <Text className="text-accent text-xs">
+                {filteredUsers.length} threads
+              </Text>
             </View>
           </View>
         }
@@ -299,10 +369,12 @@ const Inbox = () => {
           loading ? null : (
             <View className="items-center mt-10 px-4">
               <Text className="text-textPrimary text-base font-semibold">
-                No contacts found
+                {searchQuery ? "No matching contacts" : "No contacts found"}
               </Text>
               <Text className="text-textMuted text-sm mt-2 text-center">
-                Try adjusting your search or check backend user availability.
+                {searchQuery
+                  ? "Try a different keyword or clear search."
+                  : "Pull to refresh or check backend user availability."}
               </Text>
             </View>
           )
@@ -322,5 +394,17 @@ const styles = StyleSheet.create({
     right: 0,
     height: 220,
     backgroundColor: "rgba(91,124,255,0.18)",
+  },
+  sideGlow: {
+    position: "absolute",
+    top: 140,
+    right: -60,
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: "rgba(0, 207, 255, 0.10)",
+  },
+  activeRow: {
+    paddingRight: 12,
   },
 });

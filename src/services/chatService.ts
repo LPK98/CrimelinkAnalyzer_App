@@ -44,11 +44,19 @@ type ActivityByCounterpart = Record<
   }
 >;
 
+type EndpointFailure = {
+  endpoint: (typeof CANDIDATE_USER_ENDPOINTS)[number];
+  reason: unknown;
+};
+
 const ID_SOURCE_PRIORITY: Record<"userId" | "id" | "officerId", number> = {
   userId: 3,
   id: 2,
   officerId: 1,
 };
+
+const MAX_ACTIVITY_DOCS = 300;
+const ACTIVITY_RETRY_ATTEMPTS = 1;
 
 const getString = (value: unknown): string | null => {
   if (typeof value === "string") {
@@ -175,6 +183,46 @@ const mergeByCounterpart = (
   }
 };
 
+const wait = (ms: number) =>
+  new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const getErrorSummary = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return "Unknown error";
+};
+
+const getEndpointErrorSummary = (
+  endpoint: (typeof CANDIDATE_USER_ENDPOINTS)[number],
+  error: unknown,
+): string => {
+  return `${endpoint}: ${getErrorSummary(error)}`;
+};
+
+const getDocsWithRetry = async (
+  sourceQuery: ReturnType<typeof query>,
+): Promise<Awaited<ReturnType<typeof getDocs>>> => {
+  let attempts = 0;
+  let lastError: unknown = null;
+
+  while (attempts <= ACTIVITY_RETRY_ATTEMPTS) {
+    try {
+      return await getDocs(sourceQuery);
+    } catch (error) {
+      lastError = error;
+      attempts += 1;
+
+      if (attempts <= ACTIVITY_RETRY_ATTEMPTS) {
+        await wait(150 * attempts);
+      }
+    }
+  }
+
+  throw lastError;
+};
+
 const fetchLastActivityByCounterpart = async (
   currentUserId: string,
 ): Promise<ActivityByCounterpart> => {
@@ -184,20 +232,29 @@ const fetchLastActivityByCounterpart = async (
     messagesRef,
     where("senderId", "==", currentUserId),
     orderBy("timestamp", "desc"),
-    limit(150),
+    limit(MAX_ACTIVITY_DOCS),
   );
 
   const receivedQuery = query(
     messagesRef,
     where("recipientId", "==", currentUserId),
     orderBy("timestamp", "desc"),
-    limit(150),
+    limit(MAX_ACTIVITY_DOCS),
   );
 
-  const [sentSnapshot, receivedSnapshot] = await Promise.all([
-    getDocs(sentQuery),
-    getDocs(receivedQuery),
+  const [sentResult, receivedResult] = await Promise.allSettled([
+    getDocsWithRetry(sentQuery),
+    getDocsWithRetry(receivedQuery),
   ]);
+
+  if (
+    sentResult.status === "rejected" &&
+    receivedResult.status === "rejected"
+  ) {
+    throw new Error(
+      `Unable to load chat activity. Sent query failed: ${getErrorSummary(sentResult.reason)}. Received query failed: ${getErrorSummary(receivedResult.reason)}.`,
+    );
+  }
 
   const activity: ActivityByCounterpart = {};
 
@@ -223,15 +280,19 @@ const fetchLastActivityByCounterpart = async (
     mergeByCounterpart(activity, idToUse, timestamp, preview, type);
   };
 
-  sentSnapshot.docs.forEach((doc) => {
-    const data = doc.data() as MessageDoc;
-    upsertFromDoc(data);
-  });
+  if (sentResult.status === "fulfilled") {
+    sentResult.value.docs.forEach((doc) => {
+      const data = doc.data() as MessageDoc;
+      upsertFromDoc(data);
+    });
+  }
 
-  receivedSnapshot.docs.forEach((doc) => {
-    const data = doc.data() as MessageDoc;
-    upsertFromDoc(data);
-  });
+  if (receivedResult.status === "fulfilled") {
+    receivedResult.value.docs.forEach((doc) => {
+      const data = doc.data() as MessageDoc;
+      upsertFromDoc(data);
+    });
+  }
 
   return activity;
 };
@@ -278,16 +339,23 @@ const dedupeUsers = (users: ChatUser[]): ChatUser[] => {
     const existingSource = existing.idSource ?? "officerId";
     const incomingSource = user.idSource ?? "officerId";
 
-    if (
-      ID_SOURCE_PRIORITY[incomingSource] > ID_SOURCE_PRIORITY[existingSource]
-    ) {
-      byId.set(user.id, user);
-      return;
-    }
+    const incomingWins =
+      ID_SOURCE_PRIORITY[incomingSource] > ID_SOURCE_PRIORITY[existingSource];
+    const preferred = incomingWins ? user : existing;
+    const secondary = incomingWins ? existing : user;
 
-    if (!existing.email && user.email) {
-      byId.set(user.id, { ...existing, email: user.email });
-    }
+    byId.set(user.id, {
+      ...preferred,
+      name: preferred.name || secondary.name,
+      email: preferred.email || secondary.email,
+      status: preferred.status ?? secondary.status,
+      lastMessageAt: preferred.lastMessageAt ?? secondary.lastMessageAt ?? null,
+      lastMessagePreview:
+        preferred.lastMessagePreview ?? secondary.lastMessagePreview ?? null,
+      lastMessageType:
+        preferred.lastMessageType ?? secondary.lastMessageType ?? null,
+      idSource: preferred.idSource ?? secondary.idSource,
+    });
   });
 
   return Array.from(byId.values());
@@ -296,37 +364,52 @@ const dedupeUsers = (users: ChatUser[]): ChatUser[] => {
 export async function fetchChatUsers(
   currentUserId?: string,
 ): Promise<ChatUser[]> {
-  let lastError: unknown = null;
+  const failures: EndpointFailure[] = [];
   let bestUsers: ChatUser[] | null = null;
 
-  for (const endpoint of CANDIDATE_USER_ENDPOINTS) {
-    try {
+  const endpointResults = await Promise.allSettled(
+    CANDIDATE_USER_ENDPOINTS.map(async (endpoint) => {
       const { data } = await api.get(endpoint);
-      const list = extractList(data);
-      if (!list) continue;
+      return { endpoint, data };
+    }),
+  );
 
-      const users = dedupeUsers(
-        list
-          .map(normalizeUser)
-          .filter((user): user is ChatUser => user !== null)
-          .filter((user) => (currentUserId ? user.id !== currentUserId : true)),
-      );
+  endpointResults.forEach((result, index) => {
+    const endpoint = CANDIDATE_USER_ENDPOINTS[index];
 
-      bestUsers = chooseBetterUsers(bestUsers, users);
-    } catch (error: unknown) {
-      lastError = error;
+    if (result.status === "rejected") {
+      failures.push({ endpoint, reason: result.reason });
+      return;
     }
-  }
 
-  if (bestUsers && bestUsers.length > 0) {
+    const list = extractList(result.value.data);
+    if (!list) {
+      return;
+    }
+
+    const users = dedupeUsers(
+      list
+        .map(normalizeUser)
+        .filter((user): user is ChatUser => user !== null)
+        .filter((user) => (currentUserId ? user.id !== currentUserId : true)),
+    );
+
+    bestUsers = chooseBetterUsers(bestUsers, users);
+  });
+
+  const resolvedUsers = bestUsers ?? [];
+
+  if (resolvedUsers.length > 0) {
+    const dedupedBestUsers = dedupeUsers(resolvedUsers);
+
     if (!currentUserId) {
-      return bestUsers;
+      return dedupedBestUsers;
     }
 
     try {
       const activity = await fetchLastActivityByCounterpart(currentUserId);
 
-      return bestUsers.map((chatUser) => {
+      return dedupedBestUsers.map((chatUser) => {
         const last = activity[chatUser.id];
         if (!last) {
           return {
@@ -346,7 +429,7 @@ export async function fetchChatUsers(
       });
     } catch (error) {
       console.warn("Unable to load chat activity metadata:", error);
-      return bestUsers.map((chatUser) => ({
+      return dedupedBestUsers.map((chatUser) => ({
         ...chatUser,
         lastMessageAt: null,
         lastMessagePreview: null,
@@ -355,8 +438,13 @@ export async function fetchChatUsers(
     }
   }
 
-  if (lastError) {
-    throw new Error("Failed to load chat users from backend.");
+  if (failures.length > 0) {
+    const details = failures
+      .map((failure) =>
+        getEndpointErrorSummary(failure.endpoint, failure.reason),
+      )
+      .join(" | ");
+    throw new Error(`Failed to load chat users from backend. ${details}`);
   }
 
   return [];

@@ -189,6 +189,7 @@ const ChatScreen = () => {
         senderEmail={item.senderEmail}
         isCurrentUser={item.senderId === appUserId}
         timestamp={item.timestamp}
+        messageStatus={item.senderId === appUserId ? "sent" : undefined}
       />
     );
   };

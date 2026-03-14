@@ -22,6 +22,7 @@ type MessageBubbleProps = {
   senderEmail?: string;
   isCurrentUser: boolean;
   timestamp?: unknown;
+  messageStatus?: "sending" | "sent" | "failed";
 };
 
 const MessageBubble = ({
@@ -31,7 +32,22 @@ const MessageBubble = ({
   senderEmail,
   isCurrentUser,
   timestamp,
+  messageStatus,
 }: MessageBubbleProps) => {
+  const statusSymbol =
+    messageStatus === "sending"
+      ? "..."
+      : messageStatus === "sent"
+        ? "✓"
+        : messageStatus === "failed"
+          ? "!"
+          : "";
+
+  const formattedTime = formatTime(timestamp);
+  const footerText = isCurrentUser
+    ? [formattedTime, statusSymbol].filter(Boolean).join(" ")
+    : formattedTime;
+
   /**
    * Render the inner content based on message type
    */
@@ -84,8 +100,8 @@ const MessageBubble = ({
       >
         {renderContent()}
 
-        {/* Timestamp */}
-        {Boolean(timestamp) && (
+        {/* Timestamp / delivery status */}
+        {Boolean(footerText) && (
           <Text
             style={[
               styles.timestamp,
@@ -94,7 +110,7 @@ const MessageBubble = ({
                 : styles.otherUserTimestamp,
             ]}
           >
-            {formatTime(timestamp)}
+            {footerText}
           </Text>
         )}
       </View>

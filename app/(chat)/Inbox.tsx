@@ -262,9 +262,20 @@ const Inbox = () => {
         ListHeaderComponent={
           <View className="mb-6">
             <View>
-              <Text className="text-textPrimary text-4xl font-bold tracking-tight">
-                Inbox
-              </Text>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 4,
+                }}
+              >
+                <Pressable onPress={() => router.replace("/Dashboard")}>
+                  <Ionicons name="chevron-back" color="#FFFFFF" size={24} />
+                </Pressable>
+                <Text className="text-textPrimary text-4xl font-bold tracking-tight">
+                  Inbox
+                </Text>
+              </View>
               <Text className="text-textMuted mt-1 text-sm">
                 Encrypted updates across your field network
               </Text>

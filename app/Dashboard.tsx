@@ -200,8 +200,6 @@ const Dashboard = () => {
             width: SIDEBAR_WIDTH,
             transform: [{ translateX: slideX }],
             backgroundColor: colors.sidebarSurface,
-            paddingTop: 16,
-            paddingHorizontal: 12,
             shadowColor: "#000",
             shadowOpacity: 0.2,
             shadowRadius: 10,

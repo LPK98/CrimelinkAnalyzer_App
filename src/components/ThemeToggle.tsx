@@ -22,7 +22,6 @@ export default function ThemeToggle() {
 
   return (
     <View style={{ gap: 10 }}>
-      <Text style={{ color: colors.text, fontWeight: 600 }}>Theme Mode</Text>
       <View style={{ flexDirection: "row", gap: 10 }}>
         <Item value="system" />
         <Item value="light" />

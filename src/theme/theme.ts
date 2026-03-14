@@ -13,6 +13,10 @@ export const theme = {
     menuSurface: "#5856D6",
     iconSurface: "#FFFFFF",
     sidebarSurface: "#FFFFFF",
+    sidebarItemActiveBg: "#E8F0FF",
+    sidebarItemPressedBg: "#EEF2F7",
+    sidebarItemMutedText: "#6B7280",
+    sidebarItemIconBg: "#F3F4F6",
     overlay: "rgba(0, 0, 0, 0.35)",
   },
   dark: {
@@ -29,6 +33,10 @@ export const theme = {
     menuSurface: "#2B2976",
     iconSurface: "#1F2937",
     sidebarSurface: "#111827",
+    sidebarItemActiveBg: "#1B2A44",
+    sidebarItemPressedBg: "#1F2937",
+    sidebarItemMutedText: "#9CA3AF",
+    sidebarItemIconBg: "#1F2937",
     overlay: "rgba(0, 0, 0, 0.45)",
   },
 } as const;

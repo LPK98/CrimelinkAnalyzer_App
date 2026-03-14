@@ -1,18 +1,18 @@
-import { images } from "@/src/constants/images";
 import {
   clearRefreshToken,
   getRefreshToken,
   isBiometricsEnabled,
   setBiometricsEnabled as setBiometricsEnabledPref,
-  setTokens,
 } from "@/src/auth/auth";
+import { images } from "@/src/constants/images";
 import { Ionicons } from "@expo/vector-icons";
-import * as LocalAuthentication from "expo-local-authentication";
+import { useFocusEffect } from "@react-navigation/native";
 import { isAxiosError } from "axios";
+import * as LocalAuthentication from "expo-local-authentication";
+import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Image,
   ImageBackground,
   Pressable,
@@ -22,8 +22,6 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { router } from "expo-router";
-import { useFocusEffect } from "@react-navigation/native";
 import { useAuth } from "../src/hooks/useAuth";
 
 export default function LoginScreen() {
@@ -32,7 +30,6 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
 
-  const [isLogWithBiometrics, setIsLogWithBiometrics] = useState(false);
   const [isBiometricsSupported, setIsBiometricsSupported] = useState(false);
   const [isBiometricsEnrolled, setIsBiometricsEnrolled] = useState(false);
   const [biometricsEnabled, setBiometricsEnabled] = useState(false);
@@ -64,7 +61,6 @@ export default function LoginScreen() {
   useFocusEffect(
     useCallback(() => {
       setError("");
-      setIsLogWithBiometrics(false);
       checkBiometricsSupport();
     }, [checkBiometricsSupport]),
   );
@@ -76,69 +72,12 @@ export default function LoginScreen() {
       return;
     }
 
-    let accessToken: string;
-    let refreshToken: string | undefined;
-
     try {
-      // Keep any existing biometric preference during normal login
-      const res = await login(email, password, biometricsEnabled);
-      accessToken = res.accessToken;
-      refreshToken = res.refreshToken;
+      await login(email, password, biometricsEnabled);
     } catch (err) {
       console.error("Login failed:", err);
       setError("Invalid email or password. Please try again.");
       return;
-    }
-
-    // Enable biometrics only when explicitly requested (first-time opt-in)
-    if (isLogWithBiometrics && !biometricsEnabled) {
-      if (!isBiometricsSupported) {
-        Alert.alert(
-          "Biometrics",
-          "Biometric authentication is not supported on this device.",
-        );
-        setIsLogWithBiometrics(false);
-      } else if (!isBiometricsEnrolled) {
-        Alert.alert(
-          "Biometrics",
-          "No biometrics are enrolled on this device. Please set up Fingerprint/Face ID in device settings and try again.",
-        );
-        setIsLogWithBiometrics(false);
-      } else {
-        try {
-          const saved = await LocalAuthentication.authenticateAsync({
-            promptMessage: "Enable biometric login",
-            fallbackLabel: "Use Passcode",
-          });
-
-          if (saved.success) {
-            if (!refreshToken) {
-              Alert.alert(
-                "Biometrics",
-                "Biometric login needs a refresh token from backend.",
-              );
-              await setBiometricsEnabledPref(false);
-              await clearRefreshToken();
-              setBiometricsEnabled(false);
-              setHasSavedRefreshToken(false);
-            } else {
-              await setTokens(accessToken, refreshToken);
-              await setBiometricsEnabledPref(true);
-              setBiometricsEnabled(true);
-              setHasSavedRefreshToken(true);
-            }
-          } else {
-            setIsLogWithBiometrics(false);
-          }
-        } catch (error) {
-          console.error("Error enabling biometrics:", error);
-          setIsLogWithBiometrics(false);
-          Alert.alert(
-            "Biometrics",
-            "Unable to enable biometric login on this device. You can still login with email/password.",
-          );
-        }
-      }
     }
 
     router.replace("/Dashboard");
@@ -160,7 +99,7 @@ export default function LoginScreen() {
     }
 
     if (!biometricsEnabled) {
-      setError("Enable biometric login first (login once with the checkbox).");
+      setError("Enable biometric login from Settings first.");
       return;
     }
 
@@ -265,53 +204,6 @@ export default function LoginScreen() {
         <Text style={styles.rememberText}>Remember me</Text>
       </View>
 
-      <View
-        style={[
-          styles.rememberRow,
-          (!isBiometricsSupported || !isBiometricsEnrolled) && {
-            marginBottom: 8,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={[
-            styles.checkbox,
-            isLogWithBiometrics && styles.checkboxActive,
-            (!isBiometricsSupported || !isBiometricsEnrolled) &&
-              styles.checkboxDisabled,
-          ]}
-          onPress={() => {
-            if (!isBiometricsSupported) {
-              Alert.alert(
-                "Biometrics",
-                "Biometric authentication is not supported on this device.",
-              );
-              return;
-            }
-
-            if (!isBiometricsEnrolled) {
-              Alert.alert(
-                "Biometrics",
-                "No biometrics are enrolled on this device. Please set up Fingerprint/Face ID in device settings and try again.",
-              );
-              return;
-            }
-
-            setIsLogWithBiometrics(!isLogWithBiometrics);
-          }}
-        >
-          <View
-            className={`w-5 h-5 rounded border border-gray-400 items-center justify-center ${
-              isLogWithBiometrics ? "bg-black" : "bg-white"
-            }`}
-          >
-            {isLogWithBiometrics ? (
-              <Ionicons name="checkmark" size={16} color="white" />
-            ) : null}
-          </View>
-        </TouchableOpacity>
-        <Text style={styles.rememberText}>Enable biometric login</Text>
-      </View>
       {!isBiometricsSupported ? (
         <Text style={styles.biometricHint}>
           Biometric login is not available on this device.
@@ -444,10 +336,6 @@ const styles = StyleSheet.create({
 
   checkboxActive: {
     backgroundColor: "#4f46e5",
-  },
-
-  checkboxDisabled: {
-    opacity: 0.5,
   },
 
   rememberText: {

@@ -50,16 +50,20 @@ const Dashboard = () => {
   const menuItems: { name: string; route: Href; icon: any }[] = [
     // {
     //   name: "Face Recognition",
-    //   route: "/(tabs)/FaceDetection",
+    //   route: "/(screens)/FaceDetection",
     //   icon: icons.faceRecognition,
     // },  //REMOVE: Not implemented yet
-    { name: "Weapon Management", route: "/(tabs)/Weapon", icon: icons.weapon },
+    {
+      name: "Weapon Management",
+      route: "/(screens)/Weapon",
+      icon: icons.weapon,
+    },
     {
       name: "Number Plates Lookup",
-      route: "/(tabs)/Plate",
+      route: "/(screens)/Plate",
       icon: icons.numberPlate,
     },
-    { name: "Duty Management", route: "/(tabs)/Duty", icon: icons.duty },
+    { name: "Duty Management", route: "/(screens)/Duty", icon: icons.duty },
     { name: "Safety Zone", route: "/SafetyZone", icon: icons.safetyZone },
     { name: "Schedule", route: "/Dashboard", icon: icons.schedule },
     { name: "Messages", route: "/Chat", icon: icons.message },
@@ -200,8 +204,6 @@ const Dashboard = () => {
             width: SIDEBAR_WIDTH,
             transform: [{ translateX: slideX }],
             backgroundColor: colors.sidebarSurface,
-            paddingTop: 16,
-            paddingHorizontal: 12,
             shadowColor: "#000",
             shadowOpacity: 0.2,
             shadowRadius: 10,

@@ -56,13 +56,8 @@ export default function AuthProvider({
     setUserState(loggedUser.user);
     await setUser(loggedUser.user);
 
-    if (biometricEnabled) {
-      await setTokens(loggedUser.accessToken, loggedUser.refreshToken);
-      await setBiometricsEnabled(true);
-    } else {
-      await setTokens(loggedUser.accessToken);
-      await setBiometricsEnabled(false);
-    }
+    await setTokens(loggedUser.accessToken, loggedUser.refreshToken);
+    await setBiometricsEnabled(Boolean(biometricEnabled));
 
     return loggedUser;
   };

@@ -10,7 +10,12 @@
  * The app does not crash if permissions are denied.
  */
 
-import { Audio, RecordingPresets, useAudioRecorder } from "expo-audio";
+import {
+  RecordingPresets,
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  useAudioRecorder,
+} from "expo-audio";
 import * as ImagePicker from "expo-image-picker";
 import React, { useState } from "react";
 import {
@@ -24,7 +29,24 @@ import {
 } from "react-native";
 import { uploadAudio, uploadImage } from "../../utils/mediaUpload";
 
-const ChatInput = ({ onSendText, onSendImage, onSendAudio }) => {
+type ChatInputProps = {
+  onSendText: (text: string) => void | Promise<void>;
+  onSendImage: (url: string) => void | Promise<void>;
+  onSendAudio: (url: string) => void | Promise<void>;
+};
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "Something went wrong.";
+};
+
+const ChatInput = ({
+  onSendText,
+  onSendImage,
+  onSendAudio,
+}: ChatInputProps) => {
   const [message, setMessage] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -67,13 +89,13 @@ const ChatInput = ({ onSendText, onSendImage, onSendAudio }) => {
         try {
           const url = await uploadImage(result.assets[0].uri);
           onSendImage(url);
-        } catch (error) {
-          Alert.alert("Upload Failed", error.message);
+        } catch (error: unknown) {
+          Alert.alert("Upload Failed", getErrorMessage(error));
         } finally {
           setIsUploading(false);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Image picker error:", error);
       Alert.alert("Error", "Failed to pick image. Please try again.");
     }
@@ -103,13 +125,13 @@ const ChatInput = ({ onSendText, onSendImage, onSendAudio }) => {
         try {
           const url = await uploadImage(result.assets[0].uri);
           onSendImage(url);
-        } catch (error) {
-          Alert.alert("Upload Failed", error.message);
+        } catch (error: unknown) {
+          Alert.alert("Upload Failed", getErrorMessage(error));
         } finally {
           setIsUploading(false);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Camera error:", error);
       Alert.alert("Error", "Failed to take photo. Please try again.");
     }
@@ -134,7 +156,7 @@ const ChatInput = ({ onSendText, onSendImage, onSendAudio }) => {
    */
   const startRecording = async () => {
     try {
-      const { status } = await Audio.requestRecordingPermissionsAsync();
+      const { status } = await requestRecordingPermissionsAsync();
       if (status !== "granted") {
         Alert.alert(
           "Permission Required",
@@ -143,7 +165,7 @@ const ChatInput = ({ onSendText, onSendImage, onSendAudio }) => {
         return;
       }
 
-      await Audio.setAudioModeAsync({
+      await setAudioModeAsync({
         allowsRecording: true,
         playsInSilentMode: true,
       });
@@ -151,7 +173,7 @@ const ChatInput = ({ onSendText, onSendImage, onSendAudio }) => {
       await audioRecorder.prepareToRecordAsync();
       audioRecorder.record();
       setIsRecording(true);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to start recording:", error);
       Alert.alert("Error", "Failed to start recording. Please try again.");
     }
@@ -166,7 +188,7 @@ const ChatInput = ({ onSendText, onSendImage, onSendAudio }) => {
 
       setIsRecording(false);
       await audioRecorder.stop();
-      await Audio.setAudioModeAsync({ allowsRecording: false });
+      await setAudioModeAsync({ allowsRecording: false });
 
       const uri = audioRecorder.uri;
 
@@ -175,13 +197,13 @@ const ChatInput = ({ onSendText, onSendImage, onSendAudio }) => {
         try {
           const url = await uploadAudio(uri);
           onSendAudio(url);
-        } catch (error) {
-          Alert.alert("Upload Failed", error.message);
+        } catch (error: unknown) {
+          Alert.alert("Upload Failed", getErrorMessage(error));
         } finally {
           setIsUploading(false);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Failed to stop recording:", error);
       setIsRecording(false);
     }

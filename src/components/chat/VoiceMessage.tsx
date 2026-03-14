@@ -5,17 +5,27 @@
  * Uses expo-audio for audio playback.
  */
 
-import React, { useState, useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { Audio } from "expo-audio";
+import {
+  createAudioPlayer,
+  setAudioModeAsync,
+  type AudioPlayer,
+  type AudioStatus,
+} from "expo-audio";
+import React, { useEffect, useRef, useState } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const VoiceMessage = ({ mediaUrl, isCurrentUser }) => {
+type VoiceMessageProps = {
+  mediaUrl: string;
+  isCurrentUser: boolean;
+};
+
+const VoiceMessage = ({ mediaUrl, isCurrentUser }: VoiceMessageProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const playerRef = useRef(null);
-  const positionTimerRef = useRef(null);
+  const playerRef = useRef<AudioPlayer | null>(null);
+  const positionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopPositionPolling = () => {
     if (positionTimerRef.current) {
@@ -75,16 +85,16 @@ const VoiceMessage = ({ mediaUrl, isCurrentUser }) => {
 
       // Create and play new player
       setIsLoading(true);
-      await Audio.setAudioModeAsync({
+      await setAudioModeAsync({
         allowsRecording: false,
         playsInSilentMode: true,
       });
 
-      const player = Audio.createAudioPlayer({ uri: mediaUrl });
+      const player = createAudioPlayer({ uri: mediaUrl });
       playerRef.current = player;
       player.play();
 
-      player.addListener("playbackStatusUpdate", (status) => {
+      player.addListener("playbackStatusUpdate", (status: AudioStatus) => {
         if (!status?.isLoaded) return;
         setDuration((status.duration || 0) * 1000);
         setPosition((status.currentTime || 0) * 1000);
@@ -99,7 +109,7 @@ const VoiceMessage = ({ mediaUrl, isCurrentUser }) => {
       setIsPlaying(true);
       startPositionPolling();
       setIsLoading(false);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error playing audio:", error);
       setIsPlaying(false);
       stopPositionPolling();
@@ -110,7 +120,7 @@ const VoiceMessage = ({ mediaUrl, isCurrentUser }) => {
   /**
    * Format milliseconds to M:SS
    */
-  const formatTime = (millis) => {
+  const formatTime = (millis: number): string => {
     if (!millis || millis <= 0) return "0:00";
     const totalSeconds = Math.floor(millis / 1000);
     const minutes = Math.floor(totalSeconds / 60);
@@ -119,7 +129,8 @@ const VoiceMessage = ({ mediaUrl, isCurrentUser }) => {
   };
 
   // Calculate progress percentage
-  const progress = duration > 0 ? (position / duration) * 100 : 0;
+  const progress =
+    duration > 0 ? Math.min((position / duration) * 100, 100) : 0;
 
   return (
     <View style={styles.container}>

@@ -1,3 +1,4 @@
+import { router, useLocalSearchParams } from "expo-router";
 import {
   addDoc,
   collection,
@@ -5,6 +6,7 @@ import {
   orderBy,
   query,
   serverTimestamp,
+  where,
 } from "firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -33,7 +35,14 @@ type ChatMessage = {
   mediaUrl: string | null;
   senderId: string;
   senderEmail: string;
+  recipientId: string;
+  recipientEmail: string;
+  conversationId: string;
   timestamp: unknown;
+};
+
+const buildConversationId = (userA: string, userB: string): string => {
+  return [userA, userB].sort().join("_");
 };
 
 const getErrorMessage = (error: unknown): string => {
@@ -47,27 +56,67 @@ const ChatScreen = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const flatListRef = useRef<FlatList<ChatMessage> | null>(null);
   const { user, logout } = useAuth();
+  const params = useLocalSearchParams<{
+    recipientId?: string;
+    recipientName?: string;
+    recipientEmail?: string;
+  }>();
+
   const appUserId = user?.id != null ? String(user.id) : null;
   const appUserEmail = user?.username ?? "Unknown User";
+  const recipientId =
+    typeof params.recipientId === "string" ? params.recipientId : null;
+  const recipientName =
+    typeof params.recipientName === "string"
+      ? params.recipientName
+      : "Conversation";
+  const recipientEmail =
+    typeof params.recipientEmail === "string" ? params.recipientEmail : "";
+  const conversationId =
+    appUserId && recipientId
+      ? buildConversationId(appUserId, recipientId)
+      : null;
 
   useEffect(() => {
+    if (!conversationId) {
+      setMessages([]);
+      return;
+    }
+
     const messagesRef = collection(db, "messages");
-    const q = query(messagesRef, orderBy("timestamp", "asc"));
+    const q = query(
+      messagesRef,
+      where("conversationId", "==", conversationId),
+      orderBy("timestamp", "asc"),
+    );
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
-        const messageList: ChatMessage[] = snapshot.docs.map((doc) => {
+        const messageList: ChatMessage[] = snapshot.docs.flatMap((doc) => {
           const data = doc.data() as Partial<ChatMessage>;
-          return {
+          const senderId = data.senderId ?? "";
+          const targetRecipientId = data.recipientId ?? "";
+          const docConversationId = data.conversationId ?? "";
+
+          if (!docConversationId) {
+            return [];
+          }
+
+          const message: ChatMessage = {
             id: doc.id,
             type: data.type ?? "text",
             text: data.text ?? null,
             mediaUrl: data.mediaUrl ?? null,
-            senderId: data.senderId ?? "",
+            senderId,
             senderEmail: data.senderEmail ?? "",
+            recipientId: targetRecipientId,
+            recipientEmail: data.recipientEmail ?? "",
+            conversationId: docConversationId,
             timestamp: data.timestamp ?? null,
           };
+
+          return [message];
         });
 
         setMessages(messageList);
@@ -78,7 +127,7 @@ const ChatScreen = () => {
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [conversationId]);
 
   const sendMessage = async (
     type: ChatMessageType,
@@ -89,6 +138,11 @@ const ChatScreen = () => {
       return;
     }
 
+    if (!recipientId || !conversationId) {
+      Alert.alert("Error", "No recipient selected for this conversation.");
+      return;
+    }
+
     try {
       await addDoc(collection(db, "messages"), {
         type,
@@ -96,6 +150,9 @@ const ChatScreen = () => {
         mediaUrl: payload.mediaUrl,
         senderId: appUserId,
         senderEmail: appUserEmail,
+        recipientId,
+        recipientEmail,
+        conversationId,
         timestamp: serverTimestamp(),
       });
     } catch (error) {
@@ -149,7 +206,13 @@ const ChatScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>ChatMe</Text>
+        <TouchableOpacity
+          onPress={() => router.replace("/(chat)/Inbox")}
+          style={styles.backButton}
+        >
+          <Text style={styles.backText}>Back</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{recipientName}</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
@@ -174,7 +237,7 @@ const ChatScreen = () => {
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No messages yet.</Text>
               <Text style={styles.emptySubtext}>
-                Be the first to say hello!
+                Start a secure conversation with {recipientName}.
               </Text>
             </View>
           }
@@ -208,6 +271,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
+  },
+  backButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "rgba(91, 124, 255, 0.2)",
+  },
+  backText: {
+    color: "#5B7CFF",
+    fontSize: 14,
+    fontWeight: "600",
   },
   headerTitle: {
     fontSize: 22,

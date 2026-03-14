@@ -1,6 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   FlatList,
   Pressable,
@@ -10,70 +12,35 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuth } from "../../src/hooks/useAuth";
+import { fetchChatUsers, type ChatUser } from "../../src/services/chatService";
 
-const MOCK_CHATS = [
-  {
-    id: "1",
-    name: "Jineth Bosilu",
-    message: "I sent the incident photo and location pin.",
-    time: "2m",
-    unread: true,
-    active: true,
-    initials: "JB",
-  },
-  {
-    id: "2",
-    name: "P.L. Pushpakumaran",
-    message: "Update your duty schedule for today.",
-    time: "18m",
-    unread: false,
-    active: true,
-    initials: "PP",
-  },
-  {
-    id: "3",
-    name: "Isira Hansaja",
-    message: "Review the vehicle lookup status soon.",
-    time: "1h",
-    unread: false,
-    active: false,
-    initials: "IH",
-  },
-  {
-    id: "4",
-    name: "Arosha Udara",
-    message: "Need the report summary by end of shift.",
-    time: "2h",
-    unread: true,
-    active: false,
-    initials: "AU",
-  },
-  {
-    id: "5",
-    name: "Dasuni Thimasha",
-    message: "Please focus your work and send notes.",
-    time: "4h",
-    unread: false,
-    active: true,
-    initials: "DT",
-  },
-];
+type SkeletonItem = { id: string };
+type InboxListItem = ChatUser | SkeletonItem;
 
-const ACTIVE_USERS = [
-  { id: "a1", name: "Jineth", initials: "JB" },
-  { id: "a2", name: "Dasuni", initials: "DT" },
-  { id: "a3", name: "Isira", initials: "IH" },
-  { id: "a4", name: "Arosha", initials: "AU" },
-  { id: "a5", name: "P.L.", initials: "PP" },
-];
+const SKELETON_ROWS: SkeletonItem[] = Array.from({ length: 5 }, (_, index) => ({
+  id: `skeleton-${index}`,
+}));
+
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  if (parts.length === 0) return "NA";
+  return parts.map((part) => part[0].toUpperCase()).join("");
+};
+
+const isChatUser = (item: InboxListItem): item is ChatUser => {
+  return "name" in item && "email" in item;
+};
 
 const Inbox = () => {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState<ChatUser[]>([]);
   const shimmer = useRef(new Animated.Value(0.4)).current;
-  const skeletonChats = useMemo(() => MOCK_CHATS.slice(0, 5), []);
+  const currentUserId = user?.id != null ? String(user.id) : undefined;
 
   useEffect(() => {
-    const timeout = setTimeout(() => setLoading(false), 900);
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(shimmer, {
@@ -91,13 +58,61 @@ const Inbox = () => {
 
     animation.start();
 
+    let cancelled = false;
+
+    const loadUsers = async () => {
+      try {
+        const loadedUsers = await fetchChatUsers(currentUserId);
+        if (!cancelled) {
+          setUsers(loadedUsers);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          const message =
+            error instanceof Error ? error.message : "Failed to load contacts.";
+          Alert.alert("Contacts Unavailable", message);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadUsers();
+
     return () => {
-      clearTimeout(timeout);
+      cancelled = true;
       animation.stop();
     };
-  }, [shimmer]);
+  }, [currentUserId, shimmer]);
 
   const skeletonOpacity = useMemo(() => shimmer, [shimmer]);
+
+  const filteredUsers = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return users;
+
+    return users.filter((chatUser) => {
+      return (
+        chatUser.name.toLowerCase().includes(query) ||
+        chatUser.email.toLowerCase().includes(query)
+      );
+    });
+  }, [searchQuery, users]);
+
+  const activeUsers = useMemo(() => filteredUsers.slice(0, 5), [filteredUsers]);
+
+  const openConversation = (chatUser: ChatUser) => {
+    router.push({
+      pathname: "/(chat)/ChatScreen",
+      params: {
+        recipientId: chatUser.id,
+        recipientName: chatUser.name,
+        recipientEmail: chatUser.email,
+      },
+    });
+  };
 
   const renderSkeleton = () => (
     <Animated.View
@@ -114,40 +129,30 @@ const Inbox = () => {
     </Animated.View>
   );
 
-  const renderChat = ({ item }: { item: (typeof MOCK_CHATS)[number] }) => (
-    <Pressable className="rounded-2xl bg-glass border border-stroke px-4 py-3 mb-3 active:opacity-80">
+  const renderChat = ({ item }: { item: ChatUser }) => (
+    <Pressable
+      className="rounded-2xl bg-glass border border-stroke px-4 py-3 mb-3 active:opacity-80"
+      onPress={() => openConversation(item)}
+    >
       <View className="flex-row items-center">
         <View className="h-12 w-12 rounded-2xl bg-card items-center justify-center">
           <Text className="text-textPrimary font-semibold">
-            {item.initials}
+            {getInitials(item.name)}
           </Text>
-          {item.active ? (
-            <View className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-ink" />
-          ) : null}
+          <View className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-ink" />
         </View>
         <View className="ml-3 flex-1">
           <View className="flex-row items-center justify-between">
-            <Text
-              className={`text-textPrimary text-base ${
-                item.unread ? "font-semibold" : "font-medium"
-              }`}
-            >
+            <Text className="text-textPrimary text-base font-semibold">
               {item.name}
             </Text>
-            <Text className="text-textMuted text-xs">{item.time}</Text>
+            <Text className="text-textMuted text-xs">now</Text>
           </View>
           <View className="mt-1 flex-row items-center justify-between">
-            <Text
-              className={`text-sm ${
-                item.unread ? "text-textSecondary" : "text-textMuted"
-              }`}
-              numberOfLines={1}
-            >
-              {item.message}
+            <Text className="text-sm text-textMuted" numberOfLines={1}>
+              {item.email || "Tap to start secure conversation"}
             </Text>
-            {item.unread ? (
-              <View className="ml-2 h-2 w-2 rounded-full bg-accent" />
-            ) : null}
+            <View className="ml-2 h-2 w-2 rounded-full bg-accent" />
           </View>
         </View>
       </View>
@@ -159,9 +164,14 @@ const Inbox = () => {
       <View style={styles.topGlow} />
 
       <FlatList
-        data={loading ? skeletonChats : MOCK_CHATS}
+        data={(loading ? SKELETON_ROWS : filteredUsers) as InboxListItem[]}
         keyExtractor={(item, index) => item?.id ?? `chat-${index}`}
-        renderItem={loading ? renderSkeleton : renderChat}
+        renderItem={({ item }) => {
+          if (!isChatUser(item)) {
+            return renderSkeleton();
+          }
+          return renderChat({ item });
+        }}
         contentContainerStyle={{ padding: 20, paddingBottom: 32 }}
         ListHeaderComponent={
           <View className="mb-6">
@@ -199,6 +209,8 @@ const Inbox = () => {
                   placeholder="Search by unit, sector, or keyword"
                   placeholderTextColor="#7783B5"
                   className="ml-3 flex-1 text-textPrimary"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
                 />
                 <Ionicons
                   name="chatbubble-ellipses-outline"
@@ -213,18 +225,22 @@ const Inbox = () => {
                 Active now
               </Text>
               <View className="flex-row">
-                {ACTIVE_USERS.map((user) => (
-                  <View key={user.id} className="mr-3 items-center">
+                {activeUsers.map((activeUser) => (
+                  <Pressable
+                    key={activeUser.id}
+                    className="mr-3 items-center"
+                    onPress={() => openConversation(activeUser)}
+                  >
                     <View className="h-12 w-12 rounded-2xl bg-card items-center justify-center">
                       <Text className="text-textPrimary font-semibold">
-                        {user.initials}
+                        {getInitials(activeUser.name)}
                       </Text>
                       <View className="absolute -bottom-1 -right-1 h-3 w-3 rounded-full bg-success border-2 border-ink" />
                     </View>
                     <Text className="text-textMuted text-xs mt-2">
-                      {user.name}
+                      {activeUser.name}
                     </Text>
-                  </View>
+                  </Pressable>
                 ))}
               </View>
             </View>
@@ -236,6 +252,18 @@ const Inbox = () => {
               <Text className="text-accent text-xs">View all</Text>
             </View>
           </View>
+        }
+        ListEmptyComponent={
+          loading ? null : (
+            <View className="items-center mt-10 px-4">
+              <Text className="text-textPrimary text-base font-semibold">
+                No contacts found
+              </Text>
+              <Text className="text-textMuted text-sm mt-2 text-center">
+                Try adjusting your search or check backend user availability.
+              </Text>
+            </View>
+          )
         }
       />
     </SafeAreaView>

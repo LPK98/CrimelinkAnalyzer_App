@@ -9,9 +9,20 @@
  */
 
 import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import ImageMessage from "./ImageMessage";
 import VoiceMessage from "./VoiceMessage";
+
+type MessageType = "text" | "image" | "audio";
+
+type MessageBubbleProps = {
+  text?: string | null;
+  type?: MessageType;
+  mediaUrl?: string | null;
+  senderEmail?: string;
+  isCurrentUser: boolean;
+  timestamp?: unknown;
+};
 
 const MessageBubble = ({
   text,
@@ -20,18 +31,20 @@ const MessageBubble = ({
   senderEmail,
   isCurrentUser,
   timestamp,
-}) => {
+}: MessageBubbleProps) => {
   /**
    * Render the inner content based on message type
    */
-  const renderContent = () => {
+  const renderContent = (): React.ReactNode => {
     switch (type) {
       case "image":
+        if (!mediaUrl) return null;
         return (
           <ImageMessage mediaUrl={mediaUrl} isCurrentUser={isCurrentUser} />
         );
 
       case "audio":
+        if (!mediaUrl) return null;
         return (
           <VoiceMessage mediaUrl={mediaUrl} isCurrentUser={isCurrentUser} />
         );
@@ -72,7 +85,7 @@ const MessageBubble = ({
         {renderContent()}
 
         {/* Timestamp */}
-        {timestamp && (
+        {Boolean(timestamp) && (
           <Text
             style={[
               styles.timestamp,
@@ -94,9 +107,25 @@ const MessageBubble = ({
  * @param {Object} timestamp - Firestore timestamp object
  * @returns {string} Formatted time string (e.g., "2:30 PM")
  */
-const formatTime = (timestamp) => {
+const formatTime = (timestamp: unknown): string => {
   if (!timestamp) return "";
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+  let date: Date;
+  if (timestamp instanceof Date) {
+    date = timestamp;
+  } else if (
+    typeof timestamp === "object" &&
+    timestamp !== null &&
+    "toDate" in timestamp &&
+    typeof timestamp.toDate === "function"
+  ) {
+    date = timestamp.toDate();
+  } else if (typeof timestamp === "string" || typeof timestamp === "number") {
+    date = new Date(timestamp);
+  } else {
+    return "";
+  }
+
+  if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 };
 

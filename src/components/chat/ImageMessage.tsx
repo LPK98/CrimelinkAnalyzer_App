@@ -7,19 +7,24 @@
 
 import React, { useState } from "react";
 import {
-  Image,
-  StyleSheet,
   ActivityIndicator,
-  View,
-  Modal,
-  TouchableOpacity,
   Dimensions,
+  Image,
+  Modal,
+  StyleSheet,
   Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-const ImageMessage = ({ mediaUrl, isCurrentUser }) => {
+type ImageMessageProps = {
+  mediaUrl: string;
+  isCurrentUser: boolean;
+};
+
+const ImageMessage = ({ mediaUrl, isCurrentUser }: ImageMessageProps) => {
   const [loading, setLoading] = useState(true);
   const [fullscreen, setFullscreen] = useState(false);
 

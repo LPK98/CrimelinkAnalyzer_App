@@ -6,8 +6,16 @@
  * Only URLs (not raw files) are stored in Firestore.
  */
 
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import {
+  getDownloadURL,
+  ref,
+  uploadBytes,
+  type UploadMetadata,
+} from "firebase/storage";
 import { storage } from "../../firebaseConfig";
+
+type MediaFolder = "images" | "audio";
+type ClosableBlob = Blob & { close?: () => void };
 
 /**
  * Convert a local file URI to a Blob using XMLHttpRequest.
@@ -16,12 +24,13 @@ import { storage } from "../../firebaseConfig";
  * @param {string} uri - Local file URI
  * @returns {Promise<Blob>}
  */
-const uriToBlob = async (uri) => {
+const uriToBlob = async (uri: string): Promise<Blob> => {
   try {
     const response = await fetch(uri);
     return await response.blob();
-  } catch (error) {
-    throw new Error("Failed to convert file to blob: " + error.message);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error("Failed to convert file to blob: " + message);
   }
 };
 
@@ -30,7 +39,7 @@ const uriToBlob = async (uri) => {
  * @param {string} folder - "images" or "audio"
  * @returns {string} MIME type
  */
-const getContentType = (folder) => {
+const getContentType = (folder: MediaFolder): string => {
   if (folder === "images") return "image/jpeg";
   if (folder === "audio") return "audio/m4a";
   return "application/octet-stream";
@@ -43,7 +52,10 @@ const getContentType = (folder) => {
  * @param {string} folder - Storage folder name ("images" or "audio")
  * @returns {Promise<string>} The public download URL of the uploaded file
  */
-export const uploadMedia = async (uri, folder) => {
+export const uploadMedia = async (
+  uri: string,
+  folder: MediaFolder,
+): Promise<string> => {
   try {
     // Convert local file URI to blob via XHR (React Native compatible)
     const blob = await uriToBlob(uri);
@@ -55,24 +67,31 @@ export const uploadMedia = async (uri, folder) => {
     const storageRef = ref(storage, filename);
 
     // Set content type metadata so Storage knows the file type
-    const metadata = { contentType: getContentType(folder) };
+    const metadata: UploadMetadata = { contentType: getContentType(folder) };
 
     // Upload using uploadBytes (resumable variant breaks in React Native)
     const snapshot = await uploadBytes(storageRef, blob, metadata);
 
     // Close / release the blob to free memory
-    if (typeof blob.close === "function") {
-      blob.close();
+    const closableBlob = blob as ClosableBlob;
+    if (typeof closableBlob.close === "function") {
+      closableBlob.close();
     }
 
     // Get and return the download URL
     const downloadURL = await getDownloadURL(snapshot.ref);
     return downloadURL;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(`Error uploading ${folder} file:`, error);
     // Log the full server response if available
-    if (error.serverResponse) {
-      console.error("Server response:", error.serverResponse);
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "serverResponse" in error
+    ) {
+      const serverResponse = (error as { serverResponse?: unknown })
+        .serverResponse;
+      console.error("Server response:", serverResponse);
     }
     throw new Error(
       `Failed to upload ${folder === "images" ? "image" : "voice message"}. Please try again.`,
@@ -85,11 +104,13 @@ export const uploadMedia = async (uri, folder) => {
  * @param {string} uri - Local image URI
  * @returns {Promise<string>} Download URL
  */
-export const uploadImage = (uri) => uploadMedia(uri, "images");
+export const uploadImage = (uri: string): Promise<string> =>
+  uploadMedia(uri, "images");
 
 /**
  * Upload an audio file to Firebase Storage
  * @param {string} uri - Local audio URI
  * @returns {Promise<string>} Download URL
  */
-export const uploadAudio = (uri) => uploadMedia(uri, "audio");
+export const uploadAudio = (uri: string): Promise<string> =>
+  uploadMedia(uri, "audio");

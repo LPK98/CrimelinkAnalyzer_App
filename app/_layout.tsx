@@ -1,3 +1,4 @@
+import { ThemeProvider } from "@/src/theme/ThemeProvider";
 import { router, Stack, usePathname } from "expo-router";
 import React, { useEffect } from "react";
 import AuthProvider from "../src/context/AuthContext";
@@ -26,10 +27,12 @@ export default function RootLayout() {
   return (
     <AuthProvider>
       <Guard>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="login" />
-          <Stack.Screen name="Dashboard" />
-        </Stack>
+        <ThemeProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="login" />
+            <Stack.Screen name="Dashboard" />
+          </Stack>
+        </ThemeProvider>
       </Guard>
     </AuthProvider>
   );

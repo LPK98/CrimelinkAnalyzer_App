@@ -9,13 +9,13 @@ import {
   FlatList,
   Platform,
   Pressable,
-  SafeAreaView,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { API_BASE_URL } from "../../src/api/api";
 import type { Vehicle } from "../../src/types/vehicle";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type VehicleForm = {
   numberPlate: string;

@@ -1,10 +1,10 @@
-import { Bell, ChevronLeft, Clock, MapPin, X } from "lucide-react-native";
+import { Bell, Clock, MapPin, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Modal,
-  SafeAreaView,
+  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -21,6 +21,9 @@ import {
 import * as leaveService from "../../src/services/leaveService";
 import type { DutyAssignment, DutyDetail } from "../../src/types/duty";
 import type { LeaveRequest } from "../../src/types/leave";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { router } from "expo-router";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 
 type MarkedDates = Record<
   string,
@@ -348,9 +351,9 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-slate-900">
       <View className="flex-row items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3">
-        <TouchableOpacity onPress={() => navigation.goBack()} className="p-1">
-          <ChevronLeft size={28} color="#fff" />
-        </TouchableOpacity>
+        <Pressable onPress={() => router.replace("/Dashboard")}>
+          <Ionicons name="chevron-back" color="#FFFFFF" size={24} />
+        </Pressable>
 
         <Text className="text-lg font-semibold text-white">Duty Calendar</Text>
 

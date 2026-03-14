@@ -79,7 +79,7 @@ export async function fetchMe() {
 
 function mapBackendUserToAuthUser(user: BackendUserDTO): AuthUser {
   return {
-    id: user.userId,
+    id: String(user.userId),
     username: user.email,
     role: user.role,
     name: user.name,

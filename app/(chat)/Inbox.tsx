@@ -32,6 +32,44 @@ const isChatUser = (item: InboxListItem): item is ChatUser => {
   return "name" in item && "email" in item;
 };
 
+const formatLastActivity = (timestamp: number | null | undefined): string => {
+  if (!timestamp) return "new";
+
+  const now = Date.now();
+  const diff = now - timestamp;
+  const oneMinute = 60 * 1000;
+  const oneHour = 60 * oneMinute;
+  const oneDay = 24 * oneHour;
+
+  if (diff < oneMinute) return "now";
+  if (diff < oneHour) return `${Math.max(1, Math.floor(diff / oneMinute))}m`;
+  if (diff < oneDay) return `${Math.max(1, Math.floor(diff / oneHour))}h`;
+
+  const date = new Date(timestamp);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+};
+
+const getPreviewText = (chatUser: ChatUser): string => {
+  if (
+    chatUser.lastMessagePreview &&
+    chatUser.lastMessagePreview.trim().length > 0
+  ) {
+    return chatUser.lastMessagePreview;
+  }
+  return chatUser.email || "Tap to start secure conversation";
+};
+
+const byRecentActivity = (a: ChatUser, b: ChatUser): number => {
+  const aTime = a.lastMessageAt ?? -1;
+  const bTime = b.lastMessageAt ?? -1;
+
+  if (aTime !== bTime) {
+    return bTime - aTime;
+  }
+
+  return a.name.localeCompare(b.name);
+};
+
 const Inbox = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -91,9 +129,11 @@ const Inbox = () => {
 
   const filteredUsers = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return users;
+    const orderedUsers = [...users].sort(byRecentActivity);
 
-    return users.filter((chatUser) => {
+    if (!query) return orderedUsers;
+
+    return orderedUsers.filter((chatUser) => {
       return (
         chatUser.name.toLowerCase().includes(query) ||
         chatUser.email.toLowerCase().includes(query)
@@ -146,11 +186,13 @@ const Inbox = () => {
             <Text className="text-textPrimary text-base font-semibold">
               {item.name}
             </Text>
-            <Text className="text-textMuted text-xs">now</Text>
+            <Text className="text-textMuted text-xs">
+              {formatLastActivity(item.lastMessageAt)}
+            </Text>
           </View>
           <View className="mt-1 flex-row items-center justify-between">
             <Text className="text-sm text-textMuted" numberOfLines={1}>
-              {item.email || "Tap to start secure conversation"}
+              {getPreviewText(item)}
             </Text>
             <View className="ml-2 h-2 w-2 rounded-full bg-accent" />
           </View>

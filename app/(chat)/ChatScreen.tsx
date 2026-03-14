@@ -45,6 +45,18 @@ const buildConversationId = (userA: string, userB: string): string => {
   return [userA, userB].sort().join("_");
 };
 
+const isParticipantPair = (
+  senderId: string,
+  recipientId: string,
+  currentUserId: string,
+  targetUserId: string,
+): boolean => {
+  return (
+    (senderId === currentUserId && recipientId === targetUserId) ||
+    (senderId === targetUserId && recipientId === currentUserId)
+  );
+};
+
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error) {
     return error.message;
@@ -95,11 +107,28 @@ const ChatScreen = () => {
       (snapshot) => {
         const messageList: ChatMessage[] = snapshot.docs.flatMap((doc) => {
           const data = doc.data() as Partial<ChatMessage>;
-          const senderId = data.senderId ?? "";
-          const targetRecipientId = data.recipientId ?? "";
+          const senderId = data.senderId ? String(data.senderId) : "";
+          const targetRecipientId = data.recipientId
+            ? String(data.recipientId)
+            : "";
           const docConversationId = data.conversationId ?? "";
 
           if (!docConversationId) {
+            return [];
+          }
+
+          if (!appUserId || !recipientId) {
+            return [];
+          }
+
+          if (
+            !isParticipantPair(
+              senderId,
+              targetRecipientId,
+              appUserId,
+              recipientId,
+            )
+          ) {
             return [];
           }
 
@@ -127,7 +156,7 @@ const ChatScreen = () => {
     );
 
     return () => unsubscribe();
-  }, [conversationId]);
+  }, [appUserId, conversationId, recipientId]);
 
   const sendMessage = async (
     type: ChatMessageType,
@@ -140,6 +169,11 @@ const ChatScreen = () => {
 
     if (!recipientId || !conversationId) {
       Alert.alert("Error", "No recipient selected for this conversation.");
+      return;
+    }
+
+    if (recipientId === appUserId) {
+      Alert.alert("Error", "You cannot send a message to yourself.");
       return;
     }
 
@@ -257,6 +291,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#0B0F1F",
+    padding: 8,
   },
   header: {
     flexDirection: "row",

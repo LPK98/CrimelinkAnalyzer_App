@@ -23,6 +23,7 @@ export default {
     scheme: "crimelinkanalyzerapp",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
+    jsEngine: "jsc",
 
     ios: {
       supportsTablet: true,
@@ -45,7 +46,7 @@ export default {
       predictiveBackGestureEnabled: false,
       permissions: ["ACCESS_FINE_LOCATION"],
       package: "com.anonymous.CrimelinkAnalyzer_app",
-      jsEngine: "hermes",
+      jsEngine: "jsc",
     },
 
     web: {

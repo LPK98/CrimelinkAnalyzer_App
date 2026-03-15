@@ -5,12 +5,13 @@ import { submitWeaponRequest } from "@/src/services/weapon/weaponService";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import Slider from "@react-native-community/slider";
-import { ImageBackground } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  ImageBackground,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -83,176 +84,183 @@ const WeaponRequest = () => {
   };
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-        paddingHorizontal: 10,
-      }}
-    >
-      <View
-        style={{
-          width: "100%",
-          flexDirection: "row",
-          gap: 10,
-          alignItems: "center",
-          marginBottom: 10,
-        }}
+    <SafeAreaView style={styles.safeArea}>
+      <ImageBackground
+        style={styles.bg}
+        source={images.bgApp}
+        resizeMode="cover"
       >
-        <Pressable onPress={() => router.replace("/(screens)/WeaponRequest")}>
-          <Ionicons name="chevron-back" color={colors.text} size={24} />
-        </Pressable>
-        <Text style={{ color: colors.text, fontSize: 18, fontWeight: "bold" }}>
-          Weapon Request Screen
-        </Text>
-      </View>
-      <View>
-        <ImageBackground
-          style={{
-            height: "40%",
-            padding: 10,
-            borderRadius: 10,
-            overflow: "hidden",
-            marginBottom: 20,
-          }}
-          source={images.bgApp}
-        >
-          <View style={{ flex: 1 }} />
-          <Text
-            style={{
-              color: colors.white,
-              fontSize: 20,
-              fontWeight: "bold",
-            }}
+        <View style={[styles.container, { backgroundColor: colors.overlay }]}>
+          <View
+            style={[
+              styles.headerCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
           >
-            {selectedWeaponType}
-          </Text>
-          <Text style={{ color: colors.white, fontSize: 16 }}>
-            {selectedSerialNo}
-          </Text>
-        </ImageBackground>
+            <Pressable
+              onPress={() => router.replace("/(screens)/WeaponRequest")}
+              style={[
+                styles.backButton,
+                {
+                  backgroundColor: colors.iconSurface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Ionicons name="chevron-back" color={colors.text} size={22} />
+            </Pressable>
 
-        <Text
-          style={{
-            marginBottom: 10,
-            color: colors.text,
-            fontSize: 18,
-            fontWeight: "500",
-          }}
-        >
-          Add Ammo
-        </Text>
-        <View
-          style={{
-            backgroundColor: colors.card,
-            padding: 10,
-            borderRadius: 10,
-          }}
-        >
-          <Text style={{ color: colors.text, fontSize: 16, fontWeight: "400" }}>
-            Ammo Count: {ammoCount}
-          </Text>
-          <Slider
-            minimumValue={0}
-            maximumValue={20}
-            step={1}
-            value={ammoCount}
-            onValueChange={(value) => setAmmoCount(value)}
-          />
-        </View>
-        <View
-          style={{
-            backgroundColor: colors.card,
-            padding: 10,
-            borderRadius: 10,
-            marginTop: 20,
-            gap: 10,
-          }}
-        >
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-            }}
+            <View style={styles.headerTextWrap}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>
+                Weapon Request
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: colors.text }]}>
+                Configure ammunition and submit your request.
+              </Text>
+            </View>
+          </View>
+
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
           >
-            <Ionicons name="time-outline" color={colors.text} size={24} />
-            <Text
-              style={{ color: colors.text, fontSize: 16, fontWeight: "400" }}
+            <ImageBackground
+              style={styles.weaponBanner}
+              source={images.bgApp}
+              imageStyle={{ borderRadius: 18 }}
             >
-              Registered Date: {formatDate(params.registerDate)}
-            </Text>
-          </View>
-          <View style={styles.container}>
-            <View style={styles.line} />
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 10,
-            }}
-          >
-            <Ionicons
-              name="shield-checkmark-outline"
-              color={colors.text}
-              size={24}
-            />
-            <Text
-              style={{ color: colors.text, fontSize: 16, fontWeight: "400" }}
+              <View
+                style={[
+                  styles.weaponBannerOverlay,
+                  { backgroundColor: colors.overlay },
+                ]}
+              />
+              <View style={styles.weaponBannerContent}>
+                <Text style={[styles.weaponTypeText, { color: colors.white }]}>
+                  {selectedWeaponType}
+                </Text>
+                <Text
+                  style={[styles.weaponSerialText, { color: colors.white }]}
+                >
+                  {selectedSerialNo}
+                </Text>
+              </View>
+            </ImageBackground>
+
+            <View
+              style={[
+                styles.ammoCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
             >
-              Last Updated: {formatDate(params.updatedDate)}
-            </Text>
-          </View>
-          <View style={styles.container}>
-            <View style={styles.line} />
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <SimpleLineIcons name="note" color={colors.text} size={24} />
-            <Text
-              style={{ color: colors.text, fontSize: 16, fontWeight: "400" }}
+              <Text style={[styles.cardTitle, { color: colors.text }]}>
+                Add Ammo
+              </Text>
+              <View style={styles.ammoValueRow}>
+                <Text style={[styles.ammoValue, { color: colors.text }]}>
+                  {ammoCount}
+                </Text>
+                <Text style={[styles.ammoUnit, { color: colors.text }]}>
+                  ROUNDS
+                </Text>
+              </View>
+              <Slider
+                minimumValue={0}
+                maximumValue={20}
+                step={1}
+                value={ammoCount}
+                minimumTrackTintColor={colors.primary}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={colors.primary}
+                onValueChange={(value) => setAmmoCount(value)}
+              />
+            </View>
+
+            <View
+              style={[
+                styles.infoCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
             >
-              Status: {selectedStatus}
-            </Text>
-          </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Ionicons name="document-outline" color={colors.text} size={25} />
-            <TextInput
-              placeholder="Enter request note"
-              value={requestNote}
-              onChangeText={setRequestNote}
-              style={{
-                backgroundColor: colors.card,
-                borderRadius: 10,
-                fontSize: 16,
-                width: "100%",
-              }}
-            />
-          </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="time-outline" color={colors.text} size={22} />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  Registered Date: {formatDate(params.registerDate)}
+                </Text>
+              </View>
+
+              <View
+                style={[styles.divider, { borderBottomColor: colors.border }]}
+              />
+
+              <View style={styles.infoRow}>
+                <Ionicons
+                  name="shield-checkmark-outline"
+                  color={colors.text}
+                  size={22}
+                />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  Last Updated: {formatDate(params.updatedDate)}
+                </Text>
+              </View>
+
+              <View
+                style={[styles.divider, { borderBottomColor: colors.border }]}
+              />
+
+              <View style={styles.infoRow}>
+                <SimpleLineIcons name="note" color={colors.text} size={20} />
+                <Text style={[styles.infoText, { color: colors.text }]}>
+                  Status: {selectedStatus}
+                </Text>
+              </View>
+
+              <View
+                style={[
+                  styles.noteInputWrap,
+                  {
+                    backgroundColor: colors.background,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="document-outline"
+                  color={colors.text}
+                  size={21}
+                />
+                <TextInput
+                  placeholder="Enter request note"
+                  placeholderTextColor={colors.sidebarItemMutedText}
+                  value={requestNote}
+                  onChangeText={setRequestNote}
+                  style={[styles.noteInput, { color: colors.text }]}
+                />
+              </View>
+            </View>
+
+            <Pressable
+              onPress={() => handleSubmit()}
+              disabled={loading}
+              style={[
+                styles.submitButton,
+                { backgroundColor: colors.primary, opacity: loading ? 0.6 : 1 },
+              ]}
+            >
+              <Text style={[styles.submitButtonText, { color: colors.white }]}>
+                Submit Request
+              </Text>
+            </Pressable>
+          </ScrollView>
         </View>
-        <Pressable
-          onPress={() => handleSubmit()}
-          disabled={loading}
-          style={{
-            backgroundColor: colors.primary,
-            padding: 10,
-            borderRadius: 10,
-            marginTop: 20,
-            alignItems: "center",
-            opacity: loading ? 0.6 : 1,
-          }}
-        >
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>
-            Submit Request
-          </Text>
-        </Pressable>
-      </View>
+      </ImageBackground>
 
       {loading && !showSuccessPopup && (
         <PopupWindow>
           <View style={{ alignItems: "center", gap: 10 }}>
             <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={{ color: colors.text, fontWeight: "600" }}>
+            <Text style={{ color: colors.black, fontWeight: "600" }}>
               Submitting request...
             </Text>
           </View>
@@ -269,7 +277,7 @@ const WeaponRequest = () => {
             />
             <Text
               style={{
-                color: colors.text,
+                color: colors.black,
                 fontSize: 18,
                 fontWeight: "700",
                 textAlign: "center",
@@ -279,7 +287,7 @@ const WeaponRequest = () => {
             </Text>
             <Text
               style={{
-                color: colors.text,
+                color: colors.black,
                 fontSize: 14,
                 textAlign: "center",
               }}
@@ -306,15 +314,146 @@ const WeaponRequest = () => {
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  bg: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingTop: 14,
   },
-  line: {
-    borderBottomColor: "#111111",
+  headerCard: {
+    width: "100%",
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  headerSubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    opacity: 0.75,
+  },
+  scroll: {
+    flex: 1,
+    marginTop: 14,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  weaponBanner: {
+    height: 190,
+    borderRadius: 18,
+    overflow: "hidden",
+    justifyContent: "flex-end",
+  },
+  weaponBannerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  weaponBannerContent: {
+    padding: 14,
+  },
+  weaponTypeText: {
+    fontSize: 22,
+    fontWeight: "700",
+  },
+  weaponSerialText: {
+    marginTop: 4,
+    fontSize: 15,
+    opacity: 0.95,
+  },
+  ammoCard: {
+    marginTop: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  ammoValueRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 8,
+    marginTop: 8,
+  },
+  ammoValue: {
+    fontSize: 34,
+    fontWeight: "800",
+  },
+  ammoUnit: {
+    fontSize: 14,
+    fontWeight: "600",
+    opacity: 0.8,
+  },
+  infoCard: {
+    marginTop: 14,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 12,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 15,
+  },
+  divider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
     width: "100%",
+  },
+  noteInputWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  noteInput: {
+    flex: 1,
+    minHeight: 40,
+    fontSize: 15,
+    paddingVertical: 0,
+  },
+  submitButton: {
+    marginTop: 16,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    fontWeight: "700",
+    fontSize: 16,
   },
 });
 

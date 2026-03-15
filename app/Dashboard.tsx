@@ -1,16 +1,15 @@
 import SideBar from "@/src/components/SideBar";
 import TopBar from "@/src/components/TopBar";
-import { icons } from "@/src/constants/icons";
 import { images } from "@/src/constants/images";
 import { useAuth } from "@/src/hooks/useAuth";
 import { useTheme } from "@/src/theme/ThemeProvider";
+import { Ionicons } from "@expo/vector-icons";
 import { Href, router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   ImageBackground,
   Pressable,
   StyleSheet,
@@ -21,11 +20,49 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SIDEBAR_WIDTH = Math.min(320, Math.floor(SCREEN_WIDTH * 0.75));
+const ANNOUNCEMENT_WIDTH = SCREEN_WIDTH - 32;
+const AUTO_SLIDE_INTERVAL_MS = 4500;
+
+type Announcement = {
+  id: string;
+  title: string;
+  message: string;
+  tag: string;
+};
+
+type MenuItem = {
+  name: string;
+  route: Href;
+  iconName: React.ComponentProps<typeof Ionicons>["name"];
+};
+
+const announcements: Announcement[] = [
+  {
+    id: "a1",
+    title: "High Priority Alert",
+    message: "All active units must update incident reports before 18:00.",
+    tag: "Operational",
+  },
+  {
+    id: "a2",
+    title: "Vehicle Checkpoint Update",
+    message: "Checkpoint schedule changed for Route B between 20:00-23:00.",
+    tag: "Traffic",
+  },
+  {
+    id: "a3",
+    title: "Safety Zone Review",
+    message: "Review the newly marked risk zone map for this week.",
+    tag: "Security",
+  },
+];
 
 const Dashboard = () => {
   const { colors } = useTheme();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeAnnouncement, setActiveAnnouncement] = useState(0);
+  const announcementRef = useRef<FlatList<Announcement>>(null);
   const slideX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
@@ -47,7 +84,24 @@ const Dashboard = () => {
     ]).start();
   }, [isSidebarOpen, overlayOpacity, slideX]);
 
-  const menuItems: { name: string; route: Href; icon: any }[] = [
+  useEffect(() => {
+    if (announcements.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveAnnouncement((prev) => {
+        const nextIndex = (prev + 1) % announcements.length;
+        announcementRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+        return nextIndex;
+      });
+    }, AUTO_SLIDE_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const menuItems: MenuItem[] = [
     // {
     //   name: "Face Recognition",
     //   route: "/(screens)/FaceDetection",
@@ -56,96 +110,152 @@ const Dashboard = () => {
     {
       name: "Weapon Management",
       route: "/(screens)/Weapon",
-      icon: icons.weapon,
+      iconName: "shield-checkmark-outline",
     },
     {
-      name: "Number Plates Lookup",
+      name: "Plates Lookup",
       route: "/(screens)/Plate",
-      icon: icons.numberPlate,
+      iconName: "car-sport-outline",
     },
-    { name: "Duty Management", route: "/(screens)/Duty", icon: icons.duty },
+    {
+      name: "Duty Management",
+      route: "/(screens)/Duty",
+      iconName: "clipboard-outline",
+    },
     {
       name: "Safety Zone",
       route: "/(screens)/SafetyZone",
-      icon: icons.safetyZone,
+      iconName: "location-outline",
     },
-    { name: "Schedule", route: "/Dashboard", icon: icons.schedule },
-    { name: "Messages", route: "/Chat", icon: icons.message },
+    { name: "Schedule", route: "/Dashboard", iconName: "calendar-outline" },
+    {
+      name: "Messages",
+      route: "/Chat",
+      iconName: "chatbubble-ellipses-outline",
+    },
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={styles.safeArea}>
       <ImageBackground
-        style={{ flex: 1 }}
+        style={styles.bg}
         source={images.bgApp}
-        // className="w-full h-full"
-        imageStyle={{ opacity: 0.1 }}
+        imageStyle={{ opacity: 1 }}
         resizeMode="cover"
       >
         <View
-          style={{
-            backgroundColor: colors.background,
-            width: "100%",
-            height: "100%",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-          }}
+          style={[
+            styles.container,
+            {
+              backgroundColor: colors.overlay,
+            },
+          ]}
         >
-          <View
-            style={{
-              flex: 1,
-              alignItems: "center",
-              paddingHorizontal: 20,
-              width: "100%",
-            }}
-          >
+          <View style={styles.header}>
             <TopBar
               openSidebar={openSidebar}
               closeSidebar={closeSidebar}
               name={user?.name}
             />
-            <Pressable //REMOVE
-              onPress={logout}
-              style={{
-                marginTop: 24,
-                backgroundColor: colors.danger,
-                borderRadius: 12,
-                paddingVertical: 12,
-                paddingHorizontal: 24,
-                alignItems: "center",
+          </View>
+
+          <View style={styles.announcementSection}>
+            <Text style={[styles.sectionTitle, { color: colors.white }]}>
+              Important Announcements
+            </Text>
+            <FlatList
+              ref={announcementRef}
+              data={announcements}
+              horizontal
+              pagingEnabled
+              bounces={false}
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.id}
+              snapToInterval={ANNOUNCEMENT_WIDTH}
+              decelerationRate="fast"
+              getItemLayout={(_, index) => ({
+                length: ANNOUNCEMENT_WIDTH,
+                offset: ANNOUNCEMENT_WIDTH * index,
+                index,
+              })}
+              onScrollToIndexFailed={({ index }) => {
+                setTimeout(() => {
+                  announcementRef.current?.scrollToIndex({
+                    index,
+                    animated: true,
+                  });
+                }, 120);
               }}
-            >
-              <Text
-                style={{ color: colors.white, fontSize: 16, fontWeight: "600" }}
-              >
-                Logout
-              </Text>
-            </Pressable>
+              onMomentumScrollEnd={(event) => {
+                const nextIndex = Math.round(
+                  event.nativeEvent.contentOffset.x / ANNOUNCEMENT_WIDTH,
+                );
+                setActiveAnnouncement(nextIndex);
+              }}
+              renderItem={({ item }) => (
+                <View
+                  style={[
+                    styles.announcementCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.tag,
+                      {
+                        backgroundColor: colors.primaryAccent,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.tagText, { color: colors.black }]}>
+                      {item.tag}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[styles.announcementTitle, { color: colors.text }]}
+                  >
+                    {item.title}
+                  </Text>
+                  <Text
+                    style={[styles.announcementMessage, { color: colors.text }]}
+                  >
+                    {item.message}
+                  </Text>
+                </View>
+              )}
+            />
+
+            <View style={styles.dotContainer}>
+              {announcements.map((item, index) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor:
+                        index === activeAnnouncement
+                          ? colors.white
+                          : "rgba(255,255,255,0.45)",
+                    },
+                  ]}
+                />
+              ))}
+            </View>
           </View>
 
           {/* Menu buttons */}
           <View
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              paddingHorizontal: 16,
-              backgroundColor: colors.card,
-              paddingTop: 20,
-              borderTopLeftRadius: 38,
-              borderTopRightRadius: 38,
-              borderTopWidth: 0.5,
-              borderColor: colors.border,
-              elevation: 12,
-              shadowColor: colors.secondary,
-              shadowOffset: { width: 0, height: -3 },
-              shadowOpacity: 0.8,
-              shadowRadius: 8,
-            }}
+            style={[
+              styles.menuPanel,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                shadowColor: colors.secondary,
+              },
+            ]}
           >
             <FlatList
               data={menuItems}
@@ -153,6 +263,7 @@ const Dashboard = () => {
               keyExtractor={(item) => item.name}
               contentContainerStyle={styles.menuListContent}
               columnWrapperStyle={styles.menuRow}
+              scrollEnabled={false}
               renderItem={({ item, index }) => (
                 <Pressable
                   key={index}
@@ -168,10 +279,10 @@ const Dashboard = () => {
                       },
                     ]}
                   >
-                    <Image
-                      style={styles.menuIcon}
-                      source={item.icon}
-                      resizeMode="contain"
+                    <Ionicons
+                      name={item.iconName}
+                      size={30}
+                      color={colors.primary}
                     />
                   </View>
                   <Text style={[styles.menuText, { color: colors.text }]}>
@@ -222,9 +333,87 @@ const Dashboard = () => {
 };
 
 const styles = StyleSheet.create({
-  menuContainer: {},
+  safeArea: {
+    flex: 1,
+  },
+  bg: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 0,
+  },
+  header: {
+    width: "100%",
+    paddingHorizontal: 4,
+  },
+  announcementSection: {
+    marginTop: 30,
+    width: "100%",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  announcementCard: {
+    width: ANNOUNCEMENT_WIDTH,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 150,
+    justifyContent: "center",
+  },
+  tag: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  tagText: {
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  announcementTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  announcementMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.9,
+  },
+  dotContainer: {
+    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  menuPanel: {
+    marginTop: "auto",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    borderTopLeftRadius: 38,
+    borderTopRightRadius: 38,
+    borderTopWidth: 0.5,
+    elevation: 12,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+  },
   menuListContent: {
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   menuRow: {
     justifyContent: "space-between",
@@ -233,7 +422,7 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     flex: 1,
-    minHeight: 116,
+    minHeight: 108,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
@@ -251,10 +440,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
     shadowRadius: 4,
-  },
-  menuIcon: {
-    width: 40,
-    height: 40,
   },
   menuText: {
     textAlign: "center",

@@ -1,23 +1,23 @@
+import PopupWindow from "@/src/components/UI/PopupWindow";
+import { images } from "@/src/constants/images";
+import { useAuth } from "@/src/hooks/useAuth";
+import { submitWeaponRequest } from "@/src/services/weapon/weaponService";
 import { useTheme } from "@/src/theme/ThemeProvider";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
+import Slider from "@react-native-community/slider";
+import { ImageBackground } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
+import { useState } from "react";
 import {
-  Pressable,
-  Text,
-  View,
-  StyleSheet,
-  TextInput,
   ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/build/Ionicons";
-import { ImageBackground } from "expo-image";
-import Slider from "@react-native-community/slider";
-import { images } from "@/src/constants/images";
 import SimpleLineIcons from "react-native-vector-icons/SimpleLineIcons";
-import { useState } from "react";
-import { submitWeaponRequest } from "@/src/services/weapon/weaponService";
-import { useAuth } from "@/src/hooks/useAuth";
-import PopupWindow from "@/src/components/UI/PopupWindow";
 
 type WeaponRouteParams = {
   serialNo?: string;
@@ -79,7 +79,7 @@ const WeaponRequest = () => {
 
   const handleSuccessAcknowledge = () => {
     setShowSuccessPopup(false);
-    router.replace("/Weapon");
+    router.replace("/(screens)/Weapon");
   };
 
   return (
@@ -99,7 +99,7 @@ const WeaponRequest = () => {
           marginBottom: 10,
         }}
       >
-        <Pressable onPress={() => router.replace("/WeaponRequest")}>
+        <Pressable onPress={() => router.replace("/(screens)/WeaponRequest")}>
           <Ionicons name="chevron-back" color={colors.text} size={24} />
         </Pressable>
         <Text style={{ color: colors.text, fontSize: 18, fontWeight: "bold" }}>

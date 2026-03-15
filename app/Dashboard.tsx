@@ -64,7 +64,11 @@ const Dashboard = () => {
       icon: icons.numberPlate,
     },
     { name: "Duty Management", route: "/(screens)/Duty", icon: icons.duty },
-    { name: "Safety Zone", route: "/SafetyZone", icon: icons.safetyZone },
+    {
+      name: "Safety Zone",
+      route: "/(screens)/SafetyZone",
+      icon: icons.safetyZone,
+    },
     { name: "Schedule", route: "/Dashboard", icon: icons.schedule },
     { name: "Messages", route: "/Chat", icon: icons.message },
   ];

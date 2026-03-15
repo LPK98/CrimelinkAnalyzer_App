@@ -45,7 +45,7 @@ export default {
       predictiveBackGestureEnabled: false,
       permissions: ["ACCESS_FINE_LOCATION"],
       package: "com.anonymous.CrimelinkAnalyzer_app",
-      jsEngine: "jsc",
+      jsEngine: "hermes",
     },
 
     web: {

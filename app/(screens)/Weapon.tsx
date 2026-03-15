@@ -97,7 +97,7 @@ const Weapon = () => {
               Request for a Firearm & Ammiunition
             </Text>
             <Pressable
-              onPress={() => router.push("/WeaponRequest")}
+              onPress={() => router.push("/(screens)/WeaponRequest")}
               style={{
                 backgroundColor: colors.primary,
                 padding: 10,
@@ -110,7 +110,7 @@ const Weapon = () => {
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => router.push("/BulletRequest")}
+              onPress={() => router.push("/(screens)/BulletRequest")}
               style={{
                 backgroundColor: colors.primary,
                 padding: 10,

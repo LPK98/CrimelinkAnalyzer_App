@@ -1,12 +1,12 @@
-import { useTheme } from "@/src/theme/ThemeProvider";
-import { router } from "expo-router";
-import { Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/build/Ionicons";
-import * as Progress from "react-native-progress";
 import WeaponListItem from "@/src/components/WeaponListItem";
 import { images } from "@/src/constants/images";
+import { useTheme } from "@/src/theme/ThemeProvider";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 import Slider from "@react-native-community/slider";
+import { router } from "expo-router";
+import { Pressable, Text, View } from "react-native";
+import * as Progress from "react-native-progress";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const BulletRequest = () => {
   const { colors } = useTheme();
@@ -27,7 +27,7 @@ const BulletRequest = () => {
           alignContent: "center",
         }}
       >
-        <Pressable onPress={() => router.replace("/Weapon")}>
+        <Pressable onPress={() => router.replace("/(screens)/Weapon")}>
           <Ionicons name="chevron-back" color={colors.text} size={24} />
         </Pressable>
         <Text style={{ fontSize: 18, color: colors.text, fontWeight: "bold" }}>

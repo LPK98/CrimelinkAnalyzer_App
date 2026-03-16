@@ -131,7 +131,9 @@ export default function PlateRegistryScreen() {
     >
       <View style={styles.titleRow}>
         <Pressable
-          onPress={() => router.replace("/Dashboard")}
+          onPress={() =>
+            router.canGoBack() ? router.back() : router.push("/Dashboard")
+          }
           style={[
             styles.backButton,
             {

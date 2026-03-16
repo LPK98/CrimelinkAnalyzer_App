@@ -226,7 +226,9 @@ const SafetyZone = () => {
             ]}
           >
             <Pressable
-              onPress={() => router.replace("/Dashboard")}
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.push("/Dashboard")
+              }
               style={styles.backButton}
             >
               <Ionicons name="chevron-back" size={22} color={colors.primary} />

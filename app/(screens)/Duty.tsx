@@ -455,7 +455,9 @@ export default function DutyCalendarScreen({ route }: Props) {
             ]}
           >
             <Pressable
-              onPress={() => router.replace("/Dashboard")}
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.push("/Dashboard")
+              }
               style={[
                 styles.backButton,
                 {

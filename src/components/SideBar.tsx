@@ -69,7 +69,9 @@ const SideBar = () => {
     }
 
     if (item.route) {
-      router.replace(item.route);
+      if (pathname !== item.route) {
+        router.push(item.route);
+      }
     }
   };
 

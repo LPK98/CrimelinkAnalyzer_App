@@ -98,7 +98,11 @@ const WeaponRequest = () => {
             ]}
           >
             <Pressable
-              onPress={() => router.replace("/(screens)/WeaponRequest")}
+              onPress={() =>
+                router.canGoBack()
+                  ? router.back()
+                  : router.push("/(screens)/WeaponRequest")
+              }
               style={[
                 styles.backButton,
                 {

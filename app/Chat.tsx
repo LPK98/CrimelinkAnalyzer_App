@@ -100,7 +100,11 @@ const Chat = () => {
       <View style={styles.header}>
         <SafeAreaView>
           <View style={styles.headerContent}>
-            <Pressable onPress={() => router.replace("/Dashboard")}>
+            <Pressable
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.push("/Dashboard")
+              }
+            >
               <Text style={{ color: "#fff", fontSize: 16, marginRight: 15 }}>
                 Back
               </Text>

@@ -268,7 +268,7 @@ const Dashboard = () => {
                 <Pressable
                   key={index}
                   style={styles.menuButton}
-                  onPress={() => router.replace(item.route)}
+                  onPress={() => router.push(item.route)}
                 >
                   <View
                     style={[

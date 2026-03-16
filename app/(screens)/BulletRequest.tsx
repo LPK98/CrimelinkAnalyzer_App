@@ -46,7 +46,11 @@ const BulletRequest = () => {
             ]}
           >
             <Pressable
-              onPress={() => router.replace("/(screens)/Weapon")}
+              onPress={() =>
+                router.canGoBack()
+                  ? router.back()
+                  : router.push("/(screens)/Weapon")
+              }
               style={[
                 styles.backButton,
                 {

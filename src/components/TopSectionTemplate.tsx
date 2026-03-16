@@ -32,7 +32,11 @@ const TopSectionTemplate: React.FC<props> = ({
             padding: 15,
           }}
         >
-          <Pressable onPress={() => router.replace("/Dashboard")}>
+          <Pressable
+            onPress={() =>
+              router.canGoBack() ? router.back() : router.push("/Dashboard")
+            }
+          >
             <Ionicons name="chevron-back" color="#FFFFFF" size={24} />
           </Pressable>
           <Image source={images.logo} style={{ height: 60, width: 60 }} />

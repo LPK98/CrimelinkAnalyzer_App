@@ -160,7 +160,9 @@ export default function Settings() {
             ]}
           >
             <TouchableOpacity
-              onPress={() => router.replace("/Dashboard")}
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.push("/Dashboard")
+              }
               style={[
                 styles.backButton,
                 {

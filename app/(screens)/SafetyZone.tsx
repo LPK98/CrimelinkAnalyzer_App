@@ -1,5 +1,6 @@
 import OverlayButton from "@/src/components/UI/OverlayButton";
 import Searchbar from "@/src/components/UI/Searchbar";
+import { appConfig } from "@/src/constants/appConfig";
 import { images } from "@/src/constants/images";
 import { getCrimeLocations } from "@/src/services/safetyzoneService";
 import { useTheme } from "@/src/theme/ThemeProvider";
@@ -18,7 +19,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
+import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -88,6 +89,7 @@ const SafetyZone = () => {
   const [region, setRegion] = useState<Region | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [crimeLocations, setCrimeLocations] = useState<CrimeLocationType[]>([]);
+  const hasGoogleMapsApiKey = Boolean(appConfig.googleMapsApiKey?.trim());
 
   useEffect(() => {
     const loadLocation = async () => {
@@ -265,56 +267,69 @@ const SafetyZone = () => {
                 },
               ]}
             >
-              <MapView
-                ref={mapRef}
-                style={styles.map}
-                provider="google"
-                region={region}
-                onMapReady={() => onMapReady(mapRef)}
-                onRegionChangeComplete={(nextRegion) => {
-                  if (isAnimatingRef.current) return;
-                  setRegion(nextRegion);
-                }}
-                showsUserLocation={true}
-                showsMyLocationButton={false}
-                minZoomLevel={6}
-                maxZoomLevel={18}
-              >
-                {crimeLocations.map((loc, index) => (
-                  <Marker
-                    key={`${loc.latitude}-${loc.longitude}-${index}`}
-                    coordinate={{
-                      latitude: loc.latitude,
-                      longitude: loc.longitude,
+              {hasGoogleMapsApiKey ? (
+                <>
+                  <MapView
+                    ref={mapRef}
+                    style={styles.map}
+                    provider={PROVIDER_GOOGLE}
+                    region={region}
+                    onMapReady={() => onMapReady(mapRef)}
+                    onRegionChangeComplete={(nextRegion) => {
+                      if (isAnimatingRef.current) return;
+                      setRegion(nextRegion);
                     }}
-                    title={loc.crimeType}
-                  />
-                ))}
-              </MapView>
+                    showsUserLocation={true}
+                    showsMyLocationButton={false}
+                    minZoomLevel={6}
+                    maxZoomLevel={18}
+                  >
+                    {crimeLocations.map((loc, index) => (
+                      <Marker
+                        key={`${loc.latitude}-${loc.longitude}-${index}`}
+                        coordinate={{
+                          latitude: loc.latitude,
+                          longitude: loc.longitude,
+                        }}
+                        title={loc.crimeType}
+                      />
+                    ))}
+                  </MapView>
 
-              <View style={styles.mapActions} pointerEvents="box-none">
-                <OverlayButton
-                  icon="fullscreen"
-                  iconColor="#ffffff"
-                  size={24}
-                  onPress={() => setIsFullScreen((v) => !v)}
-                />
-                <OverlayButton
-                  icon="add"
-                  size={24}
-                  onPress={() => zoom("in")}
-                />
-                <OverlayButton
-                  icon="remove"
-                  size={24}
-                  onPress={() => zoom("out")}
-                />
-                <OverlayButton
-                  icon="my-location"
-                  size={24}
-                  onPress={myLocation}
-                />
-              </View>
+                  <View style={styles.mapActions} pointerEvents="box-none">
+                    <OverlayButton
+                      icon="fullscreen"
+                      iconColor="#ffffff"
+                      size={24}
+                      onPress={() => setIsFullScreen((v) => !v)}
+                    />
+                    <OverlayButton
+                      icon="add"
+                      size={24}
+                      onPress={() => zoom("in")}
+                    />
+                    <OverlayButton
+                      icon="remove"
+                      size={24}
+                      onPress={() => zoom("out")}
+                    />
+                    <OverlayButton
+                      icon="my-location"
+                      size={24}
+                      onPress={myLocation}
+                    />
+                  </View>
+                </>
+              ) : (
+                <View style={styles.mapUnavailable}>
+                  <Text
+                    style={[styles.mapUnavailableText, { color: colors.text }]}
+                  >
+                    Google Maps API key is missing. Set GOOGLE_MAPS_API_KEY for
+                    this EAS profile.
+                  </Text>
+                </View>
+              )}
             </View>
           </View>
 
@@ -351,7 +366,7 @@ const SafetyZone = () => {
         </View>
       </ImageBackground>
 
-      {isFullScreen && (
+      {isFullScreen && hasGoogleMapsApiKey && (
         <View
           style={[
             styles.fullScreenOverlay,
@@ -362,7 +377,7 @@ const SafetyZone = () => {
           <MapView
             ref={fullMapRef}
             style={{ flex: 1 }}
-            provider="google"
+            provider={PROVIDER_GOOGLE}
             region={region}
             onMapReady={() => onMapReady(fullMapRef)}
             onRegionChangeComplete={(r) => {
@@ -484,6 +499,18 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
     width: "100%",
+  },
+  mapUnavailable: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+  },
+  mapUnavailableText: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+    lineHeight: 20,
   },
   mapActions: {
     position: "absolute",

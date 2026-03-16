@@ -27,6 +27,9 @@ export default {
 
     ios: {
       supportsTablet: true,
+      config: {
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+      },
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "This app uses your location to show nearby places and reports.",
@@ -56,6 +59,11 @@ export default {
         "FOREGROUND_SERVICE",
         "FOREGROUND_SERVICE_LOCATION",
       ],
+      config: {
+        googleMaps: {
+          apiKey: process.env.GOOGLE_MAPS_API_KEY,
+        },
+      },
       package: "com.anonymous.CrimelinkAnalyzer_app",
       jsEngine: "hermes",
     },

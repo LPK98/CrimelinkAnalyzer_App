@@ -23,12 +23,18 @@ export default {
     scheme: "crimelinkanalyzerapp",
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
+    jsEngine: "hermes",
 
     ios: {
       supportsTablet: true,
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "This app uses your location to show nearby places and reports.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "Crime Link Analyzer needs your location even when the app is in the background during duty hours.",
+        NSLocationAlwaysUsageDescription:
+          "Crime Link Analyzer needs your location even when the app is in the background during duty hours.",
+        UIBackgroundModes: ["location"],
         NSFaceIDUsageDescription:
           "Allow Crime Link Analyzer to use Face ID to authenticate you.",
       },
@@ -43,9 +49,15 @@ export default {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      permissions: ["ACCESS_FINE_LOCATION"],
+      permissions: [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+      ],
       package: "com.anonymous.CrimelinkAnalyzer_app",
-      jsEngine: "jsc",
+      jsEngine: "hermes",
     },
 
     web: {
@@ -69,6 +81,14 @@ export default {
       ],
       "expo-secure-store",
       "expo-sqlite",
+      [
+        "expo-location",
+        {
+          isAndroidBackgroundLocationEnabled: true,
+          isAndroidForegroundServiceEnabled: true,
+          isIosBackgroundLocationEnabled: true,
+        },
+      ],
     ],
 
     experiments: {

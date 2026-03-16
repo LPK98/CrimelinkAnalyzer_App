@@ -29,8 +29,18 @@ export default function RootLayout() {
       <Guard>
         <ThemeProvider>
           <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
             <Stack.Screen name="login" />
             <Stack.Screen name="Dashboard" />
+            <Stack.Screen name="Chat" />
+            <Stack.Screen name="Settings" />
+            <Stack.Screen name="(screens)/Weapon" />
+            <Stack.Screen name="(screens)/Plate" />
+            <Stack.Screen name="(screens)/Duty" />
+            <Stack.Screen name="(screens)/SafetyZone" />
+            <Stack.Screen name="(screens)/WeaponRequest" />
+            <Stack.Screen name="(screens)/BulletRequest" />
+            <Stack.Screen name="(screens)/[serialNo]" />
           </Stack>
         </ThemeProvider>
       </Guard>

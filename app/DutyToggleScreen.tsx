@@ -1,15 +1,13 @@
+import { isDutyTrackingEnabled, setDutyTrackingEnabled } from "@/src/auth/auth";
 import { initLocationDB } from "@/src/services/location/locationDB";
 import {
-  isDutyTrackingEnabled,
-  setDutyTrackingEnabled,
-} from "@/src/auth/auth";
-import {
+  LOCATION_TRACKING_ERROR_CODE,
   startTracking,
   stopTracking,
 } from "@/src/services/location/locationTracker";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import React, { useEffect, useState } from "react";
-import { Alert, Switch, Text, View } from "react-native";
+import { Alert, Linking, Switch, Text, View } from "react-native";
 
 type DutyToggleScreenProps = {
   onDutyStatusChange?: (isOnDuty: boolean) => void;
@@ -87,6 +85,81 @@ export default function DutyToggleScreen({
       onDutyStatusChange?.(v);
     } catch (error) {
       console.error("Failed to update duty tracking status:", error);
+
+      const code = (error as { code?: string })?.code;
+
+      if (
+        v &&
+        code === LOCATION_TRACKING_ERROR_CODE.FOREGROUND_PERMISSION_DENIED
+      ) {
+        Alert.alert(
+          "Location Permission Required",
+          "Duty tracking requires location permission. Please allow location access and try again.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => {
+                void Linking.openSettings();
+              },
+            },
+          ],
+        );
+        return;
+      }
+
+      if (
+        v &&
+        code === LOCATION_TRACKING_ERROR_CODE.BACKGROUND_PERMISSION_DENIED
+      ) {
+        Alert.alert(
+          "Background Location Required",
+          "Duty tracking requires background location access. Please allow 'Always' or 'Allow all the time' in system settings.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => {
+                void Linking.openSettings();
+              },
+            },
+          ],
+        );
+        return;
+      }
+
+      if (
+        v &&
+        code === LOCATION_TRACKING_ERROR_CODE.BACKGROUND_LOCATION_UNAVAILABLE
+      ) {
+        Alert.alert(
+          "Background Location Not Available",
+          "This iOS development build does not include background location capability. Rebuild and reinstall the dev app, then try again.",
+        );
+        return;
+      }
+
+      if (
+        v &&
+        code ===
+          LOCATION_TRACKING_ERROR_CODE.IOS_BACKGROUND_PERMISSION_ESCALATION_REQUIRED
+      ) {
+        Alert.alert(
+          "Allow Always Required",
+          "iOS did not grant 'Always' location access yet. If you selected 'Allow Once', iOS may not show another prompt in this session. Open Settings and set Location to 'Always', then retry.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Open Settings",
+              onPress: () => {
+                void Linking.openSettings();
+              },
+            },
+          ],
+        );
+        return;
+      }
+
       Alert.alert(
         "Duty Status",
         v

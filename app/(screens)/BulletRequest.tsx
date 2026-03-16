@@ -1,157 +1,303 @@
-import { useTheme } from "@/src/theme/ThemeProvider";
-import { router } from "expo-router";
-import { Pressable, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import Ionicons from "@expo/vector-icons/build/Ionicons";
-import * as Progress from "react-native-progress";
 import WeaponListItem from "@/src/components/WeaponListItem";
 import { images } from "@/src/constants/images";
+import { useTheme } from "@/src/theme/ThemeProvider";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 import Slider from "@react-native-community/slider";
+import { router } from "expo-router";
+import { useMemo, useState } from "react";
+import {
+  ImageBackground,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import * as Progress from "react-native-progress";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const BulletRequest = () => {
   const { colors } = useTheme();
+  const REQUEST_LIMIT = 20;
+  const [roundsRequested, setRoundsRequested] = useState(0);
+
+  const remainingRounds = useMemo(
+    () => Math.max(REQUEST_LIMIT - roundsRequested, 0),
+    [roundsRequested],
+  );
+
+  const remainingProgress = useMemo(
+    () => remainingRounds / REQUEST_LIMIT,
+    [remainingRounds, REQUEST_LIMIT],
+  );
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        backgroundColor: colors.background,
-        paddingHorizontal: 10,
-      }}
-    >
-      <View
-        style={{
-          width: "100%",
-          flexDirection: "row",
-          gap: 10,
-          alignContent: "center",
-        }}
+    <SafeAreaView style={styles.safeArea}>
+      <ImageBackground
+        style={styles.bg}
+        source={images.bgApp}
+        resizeMode="cover"
       >
-        <Pressable onPress={() => router.replace("/Weapon")}>
-          <Ionicons name="chevron-back" color={colors.text} size={24} />
-        </Pressable>
-        <Text style={{ fontSize: 18, color: colors.text, fontWeight: "bold" }}>
-          Bullet Request Screen
-        </Text>
-      </View>
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginTop: 20,
-          paddingHorizontal: 10,
-          backgroundColor: colors.card,
-          padding: 15,
-          borderRadius: 10,
-        }}
-      >
-        <View style={{ flexDirection: "column", gap: 5 }}>
-          <Text
-            style={{ color: colors.primary, fontWeight: "500", fontSize: 16 }}
-          >
-            Request Limit
-          </Text>
+        <View style={[styles.container, { backgroundColor: colors.overlay }]}>
           <View
-            style={{ flexDirection: "row", gap: 5, alignItems: "baseline" }}
+            style={[
+              styles.headerCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
           >
-            <Text
-              style={{ color: colors.text, fontSize: 28, fontWeight: "bold" }}
+            <Pressable
+              onPress={() => router.replace("/(screens)/Weapon")}
+              style={[
+                styles.backButton,
+                {
+                  backgroundColor: colors.iconSurface,
+                  borderColor: colors.border,
+                },
+              ]}
             >
-              5 Units
-            </Text>
-            <Text
-              style={{ color: colors.text, fontSize: 14, fontWeight: "500" }}
-            >
-              Remaining
-            </Text>
+              <Ionicons name="chevron-back" color={colors.text} size={22} />
+            </Pressable>
+
+            <View style={styles.headerTextWrap}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>
+                Ammunition Request
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: colors.text }]}>
+                Select rounds and submit your ammo request.
+              </Text>
+            </View>
           </View>
+
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View
+              style={[
+                styles.summaryCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <View style={styles.summaryTextWrap}>
+                <Text style={[styles.summaryLabel, { color: colors.primary }]}>
+                  Request Limit
+                </Text>
+                <View style={styles.limitRow}>
+                  <Text style={[styles.limitCount, { color: colors.text }]}>
+                    {remainingRounds}
+                  </Text>
+                  <Text style={[styles.limitSuffix, { color: colors.text }]}>
+                    rounds remaining
+                  </Text>
+                </View>
+              </View>
+
+              <Progress.Circle
+                size={56}
+                progress={remainingProgress}
+                color={colors.primary}
+                indeterminate={false}
+                showsText
+                formatText={() => `${Math.round(remainingProgress * 100)}%`}
+                textStyle={{ color: colors.text, fontWeight: "700" }}
+              />
+            </View>
+
+            <Text style={[styles.sectionTitle, { color: colors.white }]}>
+              Select Weapon
+            </Text>
+            <WeaponListItem name="AK-47" imageUrl={images.profile} />
+
+            <View
+              style={[
+                styles.sliderCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.sliderTitle, { color: colors.text }]}>
+                Ammunition Count
+              </Text>
+              <View style={styles.roundsRow}>
+                <Text style={[styles.roundsValue, { color: colors.text }]}>
+                  {roundsRequested}
+                </Text>
+                <Text style={[styles.roundsUnit, { color: colors.text }]}>
+                  ROUNDS
+                </Text>
+              </View>
+
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={REQUEST_LIMIT}
+                step={1}
+                value={roundsRequested}
+                minimumTrackTintColor={colors.primary}
+                maximumTrackTintColor={colors.border}
+                thumbTintColor={colors.primary}
+                onValueChange={(value) => setRoundsRequested(value)}
+              />
+
+              <View style={styles.sliderRangeRow}>
+                <Text style={[styles.rangeText, { color: colors.text }]}>
+                  0
+                </Text>
+                <Text style={[styles.rangeText, { color: colors.text }]}>
+                  {REQUEST_LIMIT}
+                </Text>
+              </View>
+            </View>
+
+            <Pressable
+              style={[styles.submitButton, { backgroundColor: colors.primary }]}
+              onPress={() => console.log("Submit bullet request")}
+            >
+              <Text style={[styles.submitButtonText, { color: colors.white }]}>
+                Submit Request
+              </Text>
+            </Pressable>
+          </ScrollView>
         </View>
-        <Progress.Circle
-          size={50}
-          progress={0.7}
-          color={colors.primary}
-          indeterminate={false}
-        />
-      </View>
-      <View style={{ marginTop: 20, flexDirection: "column", gap: 10 }}>
-        <Text style={{ color: colors.text, fontSize: 18, fontWeight: "500" }}>
-          Select Weapon
-        </Text>
-        <WeaponListItem name="Ak-47" imageUrl={images.profile} />
-        <View
-          style={{
-            padding: 15,
-            backgroundColor: colors.card,
-            borderRadius: 10,
-          }}
-        >
-          <Text
-            style={{
-              color: colors.text,
-              fontWeight: "500",
-              fontSize: 18,
-              marginBottom: 10,
-            }}
-          >
-            Ammiunition Count
-          </Text>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 10,
-              alignItems: "baseline",
-              width: "100%",
-            }}
-          >
-            <Text
-              style={{
-                color: colors.text,
-                fontSize: 28,
-                fontWeight: "bold",
-                textAlign: "center",
-              }}
-            >
-              100
-            </Text>
-            <Text
-              style={{ color: colors.text, fontSize: 16, textAlign: "center" }}
-            >
-              ROUNDS
-            </Text>
-          </View>
-          <Slider
-            style={{ marginVertical: 10 }}
-            minimumValue={0}
-            maximumValue={20}
-            step={1}
-          />
-          <View
-            style={{ flexDirection: "row", justifyContent: "space-between" }}
-          >
-            <Text style={{ color: colors.text, fontSize: 14 }}>0</Text>
-            <Text style={{ color: colors.text, fontSize: 14 }}>20</Text>
-          </View>
-        </View>
-        <Pressable
-          style={{
-            backgroundColor: colors.primary,
-            paddingHorizontal: 15,
-            paddingVertical: 10,
-            borderRadius: 10,
-            alignItems: "center",
-          }}
-          onPress={() => console.log("Submit bullet request")}
-        >
-          <Text
-            style={{ color: colors.white, fontSize: 18, fontWeight: "bold" }}
-          >
-            Submit Request
-          </Text>
-        </Pressable>
-      </View>
+      </ImageBackground>
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  bg: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  headerCard: {
+    width: "100%",
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  headerSubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    opacity: 0.75,
+  },
+  scroll: {
+    flex: 1,
+    marginTop: 14,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+  summaryCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+  },
+  summaryTextWrap: {
+    flex: 1,
+  },
+  summaryLabel: {
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  limitRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 6,
+    marginTop: 4,
+  },
+  limitCount: {
+    fontSize: 32,
+    fontWeight: "800",
+  },
+  limitSuffix: {
+    fontSize: 14,
+    fontWeight: "500",
+    opacity: 0.85,
+  },
+  sectionTitle: {
+    marginTop: 18,
+    marginBottom: 4,
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  sliderCard: {
+    marginTop: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  sliderTitle: {
+    fontWeight: "700",
+    fontSize: 17,
+  },
+  roundsRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "baseline",
+    marginTop: 8,
+  },
+  roundsValue: {
+    fontSize: 34,
+    fontWeight: "800",
+  },
+  roundsUnit: {
+    fontSize: 14,
+    fontWeight: "600",
+    opacity: 0.8,
+  },
+  slider: {
+    marginTop: 4,
+    marginBottom: 6,
+  },
+  sliderRangeRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  rangeText: {
+    fontSize: 14,
+  },
+  submitButton: {
+    marginTop: 16,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});
 
 export default BulletRequest;

@@ -1,9 +1,24 @@
-import * as TaskManager from "expo-task-manager";
-import * as Location from "expo-location";
 import * as Crypto from "expo-crypto";
+import * as Location from "expo-location";
+import * as TaskManager from "expo-task-manager";
+import { Platform } from "react-native";
 import { addPendingLocation, countPendingLocations } from "./locationDB";
 import { removePendingLocations } from "./locationUploader";
 const TASK_NAME = "CRIMELINK_LOCATION_TASK";
+
+export const LOCATION_TRACKING_ERROR_CODE = {
+  FOREGROUND_PERMISSION_DENIED: "FOREGROUND_LOCATION_PERMISSION_DENIED",
+  BACKGROUND_PERMISSION_DENIED: "BACKGROUND_LOCATION_PERMISSION_DENIED",
+  BACKGROUND_LOCATION_UNAVAILABLE: "BACKGROUND_LOCATION_UNAVAILABLE",
+  IOS_BACKGROUND_PERMISSION_ESCALATION_REQUIRED:
+    "IOS_BACKGROUND_PERMISSION_ESCALATION_REQUIRED",
+} as const;
+
+function createLocationPermissionError(code: string, message: string) {
+  const error = new Error(message) as Error & { code: string };
+  error.code = code;
+  return error;
+}
 
 TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
   console.log("[LOCATION] Background task triggered"); //REMOVE: for testing
@@ -39,15 +54,54 @@ TaskManager.defineTask(TASK_NAME, async ({ data, error }) => {
 });
 
 export async function startTracking() {
-  const foregroundPermission =
-    await Location.requestForegroundPermissionsAsync();
-  if (foregroundPermission.status !== "granted")
-    throw new Error("Foreground location permission denied");
+  const isBackgroundLocationAvailable =
+    await Location.isBackgroundLocationAvailableAsync();
 
-  const backgroundPermission =
-    await Location.requestBackgroundPermissionsAsync();
-  if (backgroundPermission.status !== "granted")
-    throw new Error("Background location permission denied");
+  if (!isBackgroundLocationAvailable) {
+    throw createLocationPermissionError(
+      LOCATION_TRACKING_ERROR_CODE.BACKGROUND_LOCATION_UNAVAILABLE,
+      "Background location is not available in this build",
+    );
+  }
+
+  const foregroundPermission = await Location.getForegroundPermissionsAsync();
+
+  let foregroundStatus = foregroundPermission.status;
+  if (foregroundStatus !== "granted") {
+    const requestedForegroundPermission =
+      await Location.requestForegroundPermissionsAsync();
+    foregroundStatus = requestedForegroundPermission.status;
+  }
+
+  if (foregroundStatus !== "granted") {
+    throw createLocationPermissionError(
+      LOCATION_TRACKING_ERROR_CODE.FOREGROUND_PERMISSION_DENIED,
+      "Foreground location permission denied",
+    );
+  }
+
+  const backgroundPermission = await Location.getBackgroundPermissionsAsync();
+
+  let backgroundStatus = backgroundPermission.status;
+  if (backgroundStatus !== "granted") {
+    const requestedBackgroundPermission =
+      await Location.requestBackgroundPermissionsAsync();
+    backgroundStatus = requestedBackgroundPermission.status;
+  }
+
+  if (backgroundStatus !== "granted") {
+    if (Platform.OS === "ios") {
+      throw createLocationPermissionError(
+        LOCATION_TRACKING_ERROR_CODE.IOS_BACKGROUND_PERMISSION_ESCALATION_REQUIRED,
+        "iOS background permission escalation required",
+      );
+    }
+
+    throw createLocationPermissionError(
+      LOCATION_TRACKING_ERROR_CODE.BACKGROUND_PERMISSION_DENIED,
+      "Background location permission denied",
+    );
+  }
 
   const hasStarted = await Location.hasStartedLocationUpdatesAsync(TASK_NAME);
   console.log("[LOCATION] Already started:", hasStarted); //REMOVE: for testing

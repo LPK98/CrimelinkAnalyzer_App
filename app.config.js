@@ -16,7 +16,8 @@ const appName =
 export default {
   expo: {
     name: appName,
-    slug: "CrimelinkAnalyzer_app",
+    slug: "crimelink",
+    owner: "isiraexpoeass-organization",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/logo.png",
@@ -107,7 +108,7 @@ export default {
     extra: {
       router: {},
       eas: {
-        projectId: "ab5e7b7b-eb2e-49f5-9a61-01529d4cae27",
+        projectId: "cfc2ec4e-36f0-4781-a496-4c08aa07b763",
       },
       appEnv: ENV,
       apiUrl: process.env.API_URL,

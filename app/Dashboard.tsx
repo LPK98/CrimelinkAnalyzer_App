@@ -2,7 +2,9 @@ import SideBar from "@/src/components/SideBar";
 import TopBar from "@/src/components/TopBar";
 import { images } from "@/src/constants/images";
 import { useAuth } from "@/src/hooks/useAuth";
+import { getAnnouncements } from "@/src/services/announcementService";
 import { useTheme } from "@/src/theme/ThemeProvider";
+import { Announcement } from "@/src/types/announcement";
 import { Ionicons } from "@expo/vector-icons";
 import { Href, router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -23,51 +25,59 @@ const SIDEBAR_WIDTH = Math.min(320, Math.floor(SCREEN_WIDTH * 0.75));
 const ANNOUNCEMENT_WIDTH = SCREEN_WIDTH - 32;
 const AUTO_SLIDE_INTERVAL_MS = 4500;
 
-type Announcement = {
-  id: string;
-  title: string;
-  message: string;
-  tag: string;
-};
-
 type MenuItem = {
   name: string;
   route: Href;
   iconName: React.ComponentProps<typeof Ionicons>["name"];
 };
 
-const announcements: Announcement[] = [
-  {
-    id: "a1",
-    title: "High Priority Alert",
-    message: "All active units must update incident reports before 18:00.",
-    tag: "Operational",
-  },
-  {
-    id: "a2",
-    title: "Vehicle Checkpoint Update",
-    message: "Checkpoint schedule changed for Route B between 20:00-23:00.",
-    tag: "Traffic",
-  },
-  {
-    id: "a3",
-    title: "Safety Zone Review",
-    message: "Review the newly marked risk zone map for this week.",
-    tag: "Security",
-  },
-];
-
 const Dashboard = () => {
   const { colors } = useTheme();
   const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [activeAnnouncement, setActiveAnnouncement] = useState(0);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementsError, setAnnouncementsError] = useState<string | null>(
+    null,
+  );
   const announcementRef = useRef<FlatList<Announcement>>(null);
   const slideX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
   const openSidebar = () => setIsSidebarOpen(true);
   const closeSidebar = () => setIsSidebarOpen(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAnnouncements = async () => {
+      setAnnouncementsLoading(true);
+      setAnnouncementsError(null);
+
+      try {
+        const data = await getAnnouncements();
+        if (isMounted) {
+          setAnnouncements(data);
+        }
+      } catch (error) {
+        console.error("Error fetching announcements:", error);
+        if (isMounted) {
+          setAnnouncementsError("Unable to load announcements at the moment.");
+        }
+      } finally {
+        if (isMounted) {
+          setAnnouncementsLoading(false);
+        }
+      }
+    };
+
+    fetchAnnouncements();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -99,7 +109,7 @@ const Dashboard = () => {
     }, AUTO_SLIDE_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [announcements.length]);
 
   const menuItems: MenuItem[] = [
     // {
@@ -227,6 +237,62 @@ const Dashboard = () => {
                 </View>
               )}
             />
+
+            {announcementsLoading ? (
+              <View
+                style={[
+                  styles.emptyAnnouncementCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.emptyAnnouncementText, { color: colors.text }]}
+                >
+                  Loading announcements...
+                </Text>
+              </View>
+            ) : null}
+
+            {announcementsError ? (
+              <View
+                style={[
+                  styles.emptyAnnouncementCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.emptyAnnouncementText, { color: colors.text }]}
+                >
+                  {announcementsError}
+                </Text>
+              </View>
+            ) : null}
+
+            {!announcementsLoading &&
+            !announcementsError &&
+            announcements.length === 0 ? (
+              <View
+                style={[
+                  styles.emptyAnnouncementCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.emptyAnnouncementText, { color: colors.text }]}
+                >
+                  No announcements available right now.
+                </Text>
+              </View>
+            ) : null}
 
             <View style={styles.dotContainer}>
               {announcements.map((item, index) => (
@@ -366,6 +432,18 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     minHeight: 150,
     justifyContent: "center",
+  },
+  emptyAnnouncementCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  emptyAnnouncementText: {
+    fontSize: 14,
+    textAlign: "center",
+    opacity: 0.85,
   },
   tag: {
     alignSelf: "flex-start",

@@ -5,6 +5,7 @@ import { images } from "@/src/constants/images";
 import { getCrimeLocations } from "@/src/services/safetyzoneService";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import { CrimeLocationType } from "@/src/types/SafetyzoneTypes";
+import { getCrimeColor } from "@/src/utils/utils";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { router } from "expo-router";
@@ -19,7 +20,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import MapView, { Circle, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -187,19 +188,6 @@ const SafetyZone = () => {
     );
   }; //FIX
 
-  if (!region) {
-    return (
-      <View
-        style={[
-          styles.loadingContainer,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <ActivityIndicator size={"large"} color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <ImageBackground
@@ -269,7 +257,7 @@ const SafetyZone = () => {
                 },
               ]}
             >
-              {hasGoogleMapsApiKey ? (
+              {hasGoogleMapsApiKey && region ? (
                 <>
                   <MapView
                     ref={mapRef}
@@ -287,13 +275,17 @@ const SafetyZone = () => {
                     maxZoomLevel={18}
                   >
                     {crimeLocations.map((loc, index) => (
-                      <Marker
+                      <Circle
                         key={`${loc.latitude}-${loc.longitude}-${index}`}
-                        coordinate={{
+                        center={{
                           latitude: loc.latitude,
                           longitude: loc.longitude,
                         }}
-                        title={loc.crimeType}
+                        radius={200}
+                        fillColor={getCrimeColor(loc.crimeType).concat("50")}
+                        strokeColor={getCrimeColor(loc.crimeType)}
+                        strokeWidth={1}
+                        // title={loc.crimeType}  //REMOVE
                       />
                     ))}
                   </MapView>
@@ -327,9 +319,9 @@ const SafetyZone = () => {
                   <Text
                     style={[styles.mapUnavailableText, { color: colors.text }]}
                   >
-                    Google Maps API key is missing. Set GOOGLE_MAPS_API_KEY for
-                    this EAS profile.
+                    Map is loading. Please wait...
                   </Text>
+                  <ActivityIndicator size={"large"} color={colors.primary} />
                 </View>
               )}
             </View>
@@ -389,13 +381,17 @@ const SafetyZone = () => {
             showsMyLocationButton={false}
           >
             {crimeLocations.map((loc, index) => (
-              <Marker
+              <Circle
                 key={`${loc.latitude}-${loc.longitude}-${index}`}
-                coordinate={{
+                center={{
                   latitude: loc.latitude,
                   longitude: loc.longitude,
                 }}
-                title={loc.crimeType}
+                radius={200}
+                fillColor={getCrimeColor(loc.crimeType).concat("50")}
+                strokeColor={getCrimeColor(loc.crimeType)}
+                strokeWidth={1}
+                // title={loc.crimeType}  //REMOVE
               />
             ))}
           </MapView>
@@ -506,6 +502,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    gap: 12,
     paddingHorizontal: 20,
   },
   mapUnavailableText: {

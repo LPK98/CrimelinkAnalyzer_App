@@ -33,8 +33,8 @@ const SideBar = () => {
       key: "contact-us",
       label: "Contact Us",
       iconName: "contact-support",
-      status: "placeholder",
-      helperText: "Support contact is coming soon.",
+      status: "active",
+      route: "/ContactUs",
     },
     {
       key: "translate",
@@ -47,8 +47,8 @@ const SideBar = () => {
       key: "faq",
       label: "FAQ",
       iconName: "help",
-      status: "placeholder",
-      helperText: "FAQ content is coming soon.",
+      status: "active",
+      route: "/FAQ",
     },
     {
       key: "settings",
@@ -60,13 +60,13 @@ const SideBar = () => {
   ];
 
   const handleMenuPress = (item: SideBarItem) => {
-    if (item.status === "placeholder") {
-      Alert.alert(
-        "Coming soon",
-        item.helperText ?? "This feature is not ready yet.",
-      );
-      return;
-    }
+    // if (item.status === "placeholder") {
+    //   Alert.alert(
+    //     "Coming soon",
+    //     item.helperText ?? "This feature is not ready yet.",
+    //   );
+    //   return;
+    // }    //REMOVE
 
     if (item.route) {
       router.replace(item.route);

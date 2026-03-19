@@ -137,7 +137,7 @@ const Dashboard = () => {
       route: "/(screens)/SafetyZone",
       iconName: "location-outline",
     },
-    { name: "Schedule", route: "/Dashboard", iconName: "calendar-outline" },
+    { name: "Settings", route: "/Settings", iconName: "settings-outline" },
     {
       name: "Messages",
       route: "/Chat",

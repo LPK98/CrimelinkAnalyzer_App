@@ -83,5 +83,6 @@ function mapBackendUserToAuthUser(user: BackendUserDTO): AuthUser {
     username: user.email,
     role: user.role,
     name: user.name,
+    badgeNo: user.badgeNo,
   };
 }

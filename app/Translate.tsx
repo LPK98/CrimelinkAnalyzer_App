@@ -1,19 +1,34 @@
-import { router } from "expo-router";
-import React, { useState } from "react";
+import SideBar from "@/src/components/SideBar";
+import TopBar from "@/src/components/TopBar";
+import { images } from "@/src/constants/images";
+import { useAuth } from "@/src/hooks/useAuth";
+import { useTheme } from "@/src/theme/ThemeProvider";
+import React, { useEffect, useRef, useState } from "react";
 import {
+  Animated,
+  Dimensions,
+  Image,
+  ImageBackground,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 type LanguageOption = {
   name: string;
   flag: string;
 };
 
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
+const SIDEBAR_WIDTH = Math.min(320, Math.floor(SCREEN_WIDTH * 0.75));
+
 const LANGUAGE_OPTIONS: LanguageOption[] = [
+  { name: "Sinhala", flag: "🇱🇰" },
+  { name: "Tamil", flag: "🇱🇰" },
   { name: "English", flag: "🇺🇸" },
   { name: "Spanish", flag: "🇪🇸" },
   { name: "French", flag: "🇫🇷" },
@@ -22,205 +37,185 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
 ];
 
 const Translate: React.FC = () => {
+  const { colors } = useTheme();
+  const { user } = useAuth();
   const [selectedLanguage, setSelectedLanguage] = useState<string>("English");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const slideX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+
+  const displayName = user?.name || user?.username || "Officer";
+  const roleLabel = user?.role ? user.role.replace(/_/g, " ") : "Field Officer";
+
+  const openSidebar = () => setIsSidebarOpen(true);
+  const closeSidebar = () => setIsSidebarOpen(false);
 
   const handleUpdateLanguage = () => {
     console.log("Selected language:", selectedLanguage);
   };
 
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideX, {
+        toValue: isSidebarOpen ? 0 : -SIDEBAR_WIDTH,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(overlayOpacity, {
+        toValue: isSidebarOpen ? 1 : 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [isSidebarOpen, overlayOpacity, slideX]);
+
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={styles.contentContainer}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.headerSection}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.closeButtonText}>✕</Text>
-        </TouchableOpacity>
-
-        <View style={styles.avatarPlaceholder}>
-          <Text style={styles.avatarText}>JB</Text>
-        </View>
-
-        <Text style={styles.userName}>Jineth Bosilu</Text>
-        <Text style={styles.userPhone}>07X XXXX XXX</Text>
-
-        <TouchableOpacity style={styles.profileButton} activeOpacity={0.85}>
-          <Text style={styles.profileButtonText}>Profile</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.mainCard}>
-        <View style={styles.sectionTitleRow}>
-          <View style={styles.sectionIconCircle}>
-            <Text style={styles.sectionIconText}>文A</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ImageBackground source={images.bgApp} style={styles.bg} resizeMode="cover">
+        <View style={[styles.container, { backgroundColor: colors.overlay }]}>
+          <View style={styles.header}>
+            <TopBar
+              openSidebar={openSidebar}
+              closeSidebar={closeSidebar}
+              name={displayName}
+            />
           </View>
-          <Text style={styles.sectionTitle}>Select Language</Text>
-        </View>
 
-        <View style={styles.languageList}>
-          {LANGUAGE_OPTIONS.map((item) => {
-            const isSelected = selectedLanguage === item.name;
+          <ScrollView
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            <View
+              style={[
+                styles.mainCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.pageTitle, { color: colors.text }]}>Select Language</Text>
+              <Text style={[styles.pageSubtitle, { color: colors.sidebarItemMutedText }]}>
+                {displayName} ({roleLabel})
+              </Text>
 
-            return (
+              <View style={styles.languageList}>
+                {LANGUAGE_OPTIONS.map((item) => {
+                  const isSelected = selectedLanguage === item.name;
+
+                  return (
+                    <TouchableOpacity
+                      key={item.name}
+                      style={[
+                        styles.languageItem,
+                        {
+                          backgroundColor: colors.iconSurface,
+                          borderColor: isSelected ? colors.primary : colors.border,
+                        },
+                      ]}
+                      activeOpacity={0.9}
+                      onPress={() => setSelectedLanguage(item.name)}
+                    >
+                      <View style={styles.languageLeftGroup}>
+                        <Text style={styles.flagText}>{item.flag}</Text>
+                        <Text style={[styles.languageName, { color: colors.text }]}>{item.name}</Text>
+                      </View>
+
+                      {isSelected ? (
+                        <View style={[styles.selectedIcon, { backgroundColor: colors.primary }]}>
+                          <Text style={[styles.selectedIconText, { color: colors.white }]}>✓</Text>
+                        </View>
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
               <TouchableOpacity
-                key={item.name}
-                style={[
-                  styles.languageItem,
-                  isSelected ? styles.languageItemSelected : null,
-                ]}
+                style={[styles.updateButton, { backgroundColor: colors.primary }]}
                 activeOpacity={0.9}
-                onPress={() => setSelectedLanguage(item.name)}
+                onPress={handleUpdateLanguage}
               >
-                <View style={styles.languageLeftGroup}>
-                  <Text style={styles.flagText}>{item.flag}</Text>
-                  <Text style={styles.languageName}>{item.name}</Text>
-                </View>
-
-                {isSelected ? (
-                  <View style={styles.selectedIcon}>
-                    <Text style={styles.selectedIconText}>✓</Text>
-                  </View>
-                ) : null}
+                <Text style={[styles.updateButtonText, { color: colors.white }]}>Update Language</Text>
               </TouchableOpacity>
-            );
-          })}
+
+              <View style={styles.brandingSection}>
+                <Image source={images.logo} style={styles.logoImage} resizeMode="contain" />
+                <Text style={[styles.brandText, { color: colors.text }]}>Crime Link Analyzer</Text>
+              </View>
+            </View>
+          </ScrollView>
         </View>
 
-        <TouchableOpacity
-          style={styles.updateButton}
-          activeOpacity={0.9}
-          onPress={handleUpdateLanguage}
+        <Animated.View
+          pointerEvents={isSidebarOpen ? "auto" : "none"}
+          style={[StyleSheet.absoluteFillObject, { opacity: overlayOpacity }]}
         >
-          <Text style={styles.updateButtonText}>Update Language</Text>
-        </TouchableOpacity>
+          <Pressable
+            style={{ flex: 1, backgroundColor: colors.overlay }}
+            onPress={closeSidebar}
+          />
+        </Animated.View>
 
-        <View style={styles.brandingSection}>
-          <View style={styles.brandLogoCircle}>
-            <Text style={styles.brandLogoText}>CL</Text>
-          </View>
-          <Text style={styles.brandText}>Crime Link Analyzer</Text>
-        </View>
-      </View>
-    </ScrollView>
+        <Animated.View
+          style={[
+            styles.sidebar,
+            {
+              width: SIDEBAR_WIDTH,
+              backgroundColor: colors.sidebarSurface,
+              transform: [{ translateX: slideX }],
+            },
+          ]}
+        >
+          <SideBar />
+        </Animated.View>
+      </ImageBackground>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {
+  safeArea: {
     flex: 1,
-    backgroundColor: "#070A16",
+  },
+  bg: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+  },
+  header: {
+    width: "100%",
+    paddingHorizontal: 4,
   },
   contentContainer: {
-    paddingBottom: 28,
-  },
-  headerSection: {
-    paddingTop: 46,
-    paddingBottom: 24,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    position: "relative",
-  },
-  closeButton: {
-    position: "absolute",
-    top: 44,
-    right: 24,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 2,
-    borderColor: "#9098AD",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  closeButtonText: {
-    color: "#B0B7C7",
-    fontSize: 16,
-    fontWeight: "700",
-    lineHeight: 18,
-  },
-  avatarPlaceholder: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: "#E8EBF0",
-    borderWidth: 3,
-    borderColor: "#4D566D",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 10,
-  },
-  avatarText: {
-    color: "#2B3550",
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#FFFFFF",
-    marginBottom: 4,
-  },
-  userPhone: {
-    fontSize: 13,
-    color: "#AEB5C4",
-    marginBottom: 10,
-  },
-  profileButton: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 999,
-    paddingHorizontal: 28,
-    paddingVertical: 10,
-  },
-  profileButtonText: {
-    color: "#0E1220",
-    fontSize: 14,
-    fontWeight: "700",
+    paddingTop: 18,
+    paddingBottom: 22,
   },
   mainCard: {
-    backgroundColor: "#E5E6EB",
-    borderTopLeftRadius: 34,
-    borderTopRightRadius: 34,
+    borderRadius: 22,
+    borderWidth: 1,
     paddingTop: 24,
     paddingHorizontal: 18,
     paddingBottom: 22,
-    minHeight: 760,
   },
-  sectionTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  sectionIconCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: "#F5F6F8",
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  sectionIconText: {
-    color: "#0B0F1D",
-    fontSize: 22,
-    fontWeight: "700",
-  },
-  sectionTitle: {
+  pageTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#0E1220",
+    marginBottom: 4,
+  },
+  pageSubtitle: {
+    fontSize: 13,
+    marginBottom: 16,
   },
   languageList: {
     marginTop: 4,
     gap: 12,
-    marginBottom: 26,
+    marginBottom: 22,
   },
   languageItem: {
-    backgroundColor: "#F1F2F4",
     borderRadius: 16,
     paddingHorizontal: 18,
     minHeight: 60,
@@ -228,16 +223,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1.5,
-    borderColor: "transparent",
-    shadowColor: "#10162A",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
-  },
-  languageItemSelected: {
-    borderColor: "#2F66E3",
-    backgroundColor: "#DCE2EC",
   },
   languageLeftGroup: {
     flexDirection: "row",
@@ -250,64 +240,57 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#11172C",
   },
   selectedIcon: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: "#2E66E3",
     alignItems: "center",
     justifyContent: "center",
   },
   selectedIconText: {
-    color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "700",
     lineHeight: 16,
   },
   updateButton: {
     width: "100%",
-    backgroundColor: "#2F66E3",
     borderRadius: 18,
     paddingVertical: 14,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#111A34",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.16,
     shadowRadius: 8,
     elevation: 4,
-    marginBottom: 130,
+    marginBottom: 26,
   },
   updateButtonText: {
-    color: "#FFFFFF",
     fontSize: 16,
     fontWeight: "700",
   },
   brandingSection: {
     alignItems: "center",
   },
-  brandLogoCircle: {
+  logoImage: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    borderWidth: 3,
-    borderColor: "#1038A4",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#0E1630",
     marginBottom: 14,
   },
-  brandLogoText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
-  },
   brandText: {
-    color: "#0A1022",
     fontSize: 13,
     fontWeight: "700",
+  },
+  sidebar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    bottom: 0,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 10,
   },
 });
 

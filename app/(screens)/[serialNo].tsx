@@ -6,7 +6,7 @@ import { useTheme } from "@/src/theme/ThemeProvider";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import Slider from "@react-native-community/slider";
 import { router, useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   ImageBackground,
@@ -26,6 +26,7 @@ type WeaponRouteParams = {
   status?: string;
   updatedDate?: string;
   registerDate?: string;
+  imageUrl?: string;
 };
 
 const WeaponRequest = () => {
@@ -35,11 +36,39 @@ const WeaponRequest = () => {
   const [requestNote, setRequestNote] = useState("");
   const [loading, setLoading] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [bannerImageFailed, setBannerImageFailed] = useState(false);
   const params = useLocalSearchParams<WeaponRouteParams>();
 
   const selectedWeaponType = params.weaponType ?? "Unknown Weapon";
   const selectedSerialNo = params.serialNo ?? "N/A";
   const selectedStatus = params.status ?? "N/A";
+  const rawImageUrl = Array.isArray(params.imageUrl)
+    ? params.imageUrl[0]
+    : params.imageUrl;
+
+  const normalizeImageUrl = (url?: string) => {
+    if (!url) return undefined;
+    const trimmed = url.trim();
+    if (!trimmed || trimmed === "undefined" || trimmed === "null") {
+      return undefined;
+    }
+
+    try {
+      return decodeURIComponent(trimmed);
+    } catch {
+      return trimmed;
+    }
+  };
+
+  const selectedImageUrl = normalizeImageUrl(rawImageUrl);
+  const bannerSource =
+    selectedImageUrl && !bannerImageFailed
+      ? { uri: selectedImageUrl }
+      : images.logo;
+
+  useEffect(() => {
+    setBannerImageFailed(false);
+  }, [selectedImageUrl]);
 
   const formatDate = (date?: string) => {
     if (!date) return "N/A";
@@ -131,7 +160,8 @@ const WeaponRequest = () => {
           >
             <ImageBackground
               style={styles.weaponBanner}
-              source={images.bgApp}
+              source={bannerSource}
+              onError={() => setBannerImageFailed(true)}
               imageStyle={{ borderRadius: 18 }}
             >
               <View
@@ -371,6 +401,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     overflow: "hidden",
     justifyContent: "flex-end",
+    backgroundColor: "white",
   },
   weaponBannerOverlay: {
     ...StyleSheet.absoluteFillObject,

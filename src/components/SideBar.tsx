@@ -1,6 +1,6 @@
 import { Href, router, usePathname } from "expo-router";
 import React from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../theme/ThemeProvider";
@@ -40,15 +40,15 @@ const SideBar = () => {
       key: "translate",
       label: "Translate",
       iconName: "translate",
-      status: "placeholder",
-      helperText: "Language tools are coming soon.",
+      status: "active",
+      route: "/Translate",
     },
     {
       key: "faq",
       label: "FAQ",
       iconName: "help",
       status: "active",
-      route: "/FAQ",
+      route: "/FAQPage",
     },
     {
       key: "settings",

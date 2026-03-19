@@ -1,6 +1,7 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,23 +10,170 @@ import {
 } from "react-native";
 
 type LanguageOption = {
-  name: string;
+  name: AppLanguage;
   flag: string;
 };
 
+type AppLanguage =
+  | "English"
+  | "Sinhala"
+  | "Tamil"
+  | "Spanish"
+  | "French"
+  | "German"
+  | "Chinese";
+
 const LANGUAGE_OPTIONS: LanguageOption[] = [
   { name: "English", flag: "🇺🇸" },
+  { name: "Sinhala", flag: "🇱🇰" },
+  { name: "Tamil", flag: "🇮🇳" },
   { name: "Spanish", flag: "🇪🇸" },
   { name: "French", flag: "🇫🇷" },
   { name: "German", flag: "🇩🇪" },
   { name: "Chinese", flag: "🇨🇳" },
 ];
 
+const UI_TRANSLATIONS: Record<
+  AppLanguage,
+  {
+    profile: string;
+    selectLanguage: string;
+    updateLanguage: string;
+    brand: string;
+  }
+> = {
+  English: {
+    profile: "Profile",
+    selectLanguage: "Select Language",
+    updateLanguage: "Update Language",
+    brand: "Crime Link Analyzer",
+  },
+  Sinhala: {
+    profile: "පැතිකඩ",
+    selectLanguage: "භාෂාව තෝරන්න",
+    updateLanguage: "භාෂාව යාවත්කාලීන කරන්න",
+    brand: "Crime Link Analyzer",
+  },
+  Tamil: {
+    profile: "சுயவிவரம்",
+    selectLanguage: "மொழியைத் தேர்ந்தெடுக்கவும்",
+    updateLanguage: "மொழியைப் புதுப்பிக்கவும்",
+    brand: "Crime Link Analyzer",
+  },
+  Spanish: {
+    profile: "Perfil",
+    selectLanguage: "Seleccionar idioma",
+    updateLanguage: "Actualizar idioma",
+    brand: "Crime Link Analyzer",
+  },
+  French: {
+    profile: "Profil",
+    selectLanguage: "Choisir la langue",
+    updateLanguage: "Mettre a jour la langue",
+    brand: "Crime Link Analyzer",
+  },
+  German: {
+    profile: "Profil",
+    selectLanguage: "Sprache auswahlen",
+    updateLanguage: "Sprache aktualisieren",
+    brand: "Crime Link Analyzer",
+  },
+  Chinese: {
+    profile: "个人资料",
+    selectLanguage: "选择语言",
+    updateLanguage: "更新语言",
+    brand: "Crime Link Analyzer",
+  },
+};
+
+const LANGUAGE_DISPLAY_NAMES: Record<
+  AppLanguage,
+  Record<AppLanguage, string>
+> = {
+  English: {
+    English: "English",
+    Sinhala: "Sinhala",
+    Tamil: "Tamil",
+    Spanish: "Spanish",
+    French: "French",
+    German: "German",
+    Chinese: "Chinese",
+  },
+  Sinhala: {
+    English: "ඉංග්රීසි",
+    Sinhala: "සිංහල",
+    Tamil: "දෙමළ",
+    Spanish: "ස්පාඤ්ඤ",
+    French: "ප්රංශ",
+    German: "ජර්මන්",
+    Chinese: "චීන",
+  },
+  Tamil: {
+    English: "ஆங்கிலம்",
+    Sinhala: "சிங்களம்",
+    Tamil: "தமிழ்",
+    Spanish: "ஸ்பானிஷ்",
+    French: "பிரெஞ்சு",
+    German: "ஜெர்மன்",
+    Chinese: "சீனம்",
+  },
+  Spanish: {
+    English: "Ingles",
+    Sinhala: "Cingales",
+    Tamil: "Tamil",
+    Spanish: "Espanol",
+    French: "Frances",
+    German: "Aleman",
+    Chinese: "Chino",
+  },
+  French: {
+    English: "Anglais",
+    Sinhala: "Cinghalais",
+    Tamil: "Tamoul",
+    Spanish: "Espagnol",
+    French: "Francais",
+    German: "Allemand",
+    Chinese: "Chinois",
+  },
+  German: {
+    English: "Englisch",
+    Sinhala: "Singhalesisch",
+    Tamil: "Tamil",
+    Spanish: "Spanisch",
+    French: "Franzosisch",
+    German: "Deutsch",
+    Chinese: "Chinesisch",
+  },
+  Chinese: {
+    English: "英语",
+    Sinhala: "僧伽罗语",
+    Tamil: "泰米尔语",
+    Spanish: "西班牙语",
+    French: "法语",
+    German: "德语",
+    Chinese: "中文",
+  },
+};
+
 const Translate: React.FC = () => {
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("English");
+  const [selectedLanguage, setSelectedLanguage] =
+    useState<AppLanguage>("English");
+  const [appLanguage, setAppLanguage] = useState<AppLanguage>("English");
+
+  const labels = UI_TRANSLATIONS[appLanguage];
 
   const handleUpdateLanguage = () => {
+    setAppLanguage(selectedLanguage);
     console.log("Selected language:", selectedLanguage);
+  };
+
+  const handleClosePress = () => {
+    if (router.canGoBack()) {
+      router.back();
+      return;
+    }
+
+    router.replace("/Dashboard");
   };
 
   return (
@@ -35,10 +183,7 @@ const Translate: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.headerSection}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={styles.closeButton} onPress={handleClosePress}>
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
 
@@ -50,7 +195,7 @@ const Translate: React.FC = () => {
         <Text style={styles.userPhone}>07X XXXX XXX</Text>
 
         <TouchableOpacity style={styles.profileButton} activeOpacity={0.85}>
-          <Text style={styles.profileButtonText}>Profile</Text>
+          <Text style={styles.profileButtonText}>{labels.profile}</Text>
         </TouchableOpacity>
       </View>
 
@@ -59,7 +204,7 @@ const Translate: React.FC = () => {
           <View style={styles.sectionIconCircle}>
             <Text style={styles.sectionIconText}>文A</Text>
           </View>
-          <Text style={styles.sectionTitle}>Select Language</Text>
+          <Text style={styles.sectionTitle}>{labels.selectLanguage}</Text>
         </View>
 
         <View style={styles.languageList}>
@@ -78,7 +223,9 @@ const Translate: React.FC = () => {
               >
                 <View style={styles.languageLeftGroup}>
                   <Text style={styles.flagText}>{item.flag}</Text>
-                  <Text style={styles.languageName}>{item.name}</Text>
+                  <Text style={styles.languageName}>
+                    {LANGUAGE_DISPLAY_NAMES[appLanguage][item.name]}
+                  </Text>
                 </View>
 
                 {isSelected ? (
@@ -96,14 +243,16 @@ const Translate: React.FC = () => {
           activeOpacity={0.9}
           onPress={handleUpdateLanguage}
         >
-          <Text style={styles.updateButtonText}>Update Language</Text>
+          <Text style={styles.updateButtonText}>{labels.updateLanguage}</Text>
         </TouchableOpacity>
 
         <View style={styles.brandingSection}>
-          <View style={styles.brandLogoCircle}>
-            <Text style={styles.brandLogoText}>CL</Text>
-          </View>
-          <Text style={styles.brandText}>Crime Link Analyzer</Text>
+          <Image
+            source={require("../assets/images/logo.png")}
+            style={styles.brandLogoImage}
+            resizeMode="contain"
+          />
+          <Text style={styles.brandText}>{labels.brand}</Text>
         </View>
       </View>
     </ScrollView>
@@ -288,21 +437,10 @@ const styles = StyleSheet.create({
   brandingSection: {
     alignItems: "center",
   },
-  brandLogoCircle: {
+  brandLogoImage: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    borderWidth: 3,
-    borderColor: "#1038A4",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#0E1630",
     marginBottom: 14,
-  },
-  brandLogoText: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
   },
   brandText: {
     color: "#0A1022",

@@ -3,6 +3,7 @@ export type AuthUser = {
   username: string;
   role: string;
   name?: string;
+  badgeNo?: string | null;
 };
 
 export type AuthContextType = {

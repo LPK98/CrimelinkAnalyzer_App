@@ -1,6 +1,6 @@
 import { Href, router, usePathname } from "expo-router";
 import React from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useAuth } from "../hooks/useAuth";
 import { useTheme } from "../theme/ThemeProvider";
@@ -33,22 +33,22 @@ const SideBar = () => {
       key: "contact-us",
       label: "Contact Us",
       iconName: "contact-support",
-      status: "placeholder",
-      helperText: "Support contact is coming soon.",
+      status: "active",
+      route: "/ContactUs",
     },
     {
       key: "translate",
       label: "Translate",
       iconName: "translate",
-      status: "placeholder",
-      helperText: "Language tools are coming soon.",
+      status: "active",
+      route: "/Translate",
     },
     {
       key: "faq",
       label: "FAQ",
       iconName: "help",
-      status: "placeholder",
-      helperText: "FAQ content is coming soon.",
+      status: "active",
+      route: "/FAQPage",
     },
     {
       key: "settings",
@@ -60,13 +60,13 @@ const SideBar = () => {
   ];
 
   const handleMenuPress = (item: SideBarItem) => {
-    if (item.status === "placeholder") {
-      Alert.alert(
-        "Coming soon",
-        item.helperText ?? "This feature is not ready yet.",
-      );
-      return;
-    }
+    // if (item.status === "placeholder") {
+    //   Alert.alert(
+    //     "Coming soon",
+    //     item.helperText ?? "This feature is not ready yet.",
+    //   );
+    //   return;
+    // }    //REMOVE
 
     if (item.route) {
       if (pathname !== item.route) {

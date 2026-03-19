@@ -5,6 +5,7 @@ import { images } from "@/src/constants/images";
 import { getCrimeLocations } from "@/src/services/safetyzoneService";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import { CrimeLocationType } from "@/src/types/SafetyzoneTypes";
+import { getCrimeColor } from "@/src/utils/utils";
 import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
 import { router } from "expo-router";
@@ -19,7 +20,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import MapView, { Circle, PROVIDER_GOOGLE, Region } from "react-native-maps";
 import {
   SafeAreaView,
   useSafeAreaInsets,
@@ -88,8 +89,10 @@ const SafetyZone = () => {
   const fullMapRef = React.useRef<MapView>(null);
   const [region, setRegion] = useState<Region | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [crimeLocations, setCrimeLocations] = useState<CrimeLocationType[]>([]);
   const hasGoogleMapsApiKey = Boolean(appConfig.googleMapsApiKey?.trim());
+  const searchInputRef = React.useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const loadLocation = async () => {
@@ -115,6 +118,12 @@ const SafetyZone = () => {
     loadLocation();
     fetchLocations();
   }, []);
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    console.log("Search query:", text); //REMOVE
+    // IMPLEMENT: Add autocomplete and searching function
+  };
 
   const fetchLocations = async () => {
     try {
@@ -187,19 +196,6 @@ const SafetyZone = () => {
     );
   }; //FIX
 
-  if (!region) {
-    return (
-      <View
-        style={[
-          styles.loadingContainer,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <ActivityIndicator size={"large"} color={colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <ImageBackground
@@ -252,7 +248,23 @@ const SafetyZone = () => {
               },
             ]}
           >
-            <Searchbar />
+            <Searchbar
+              value={searchQuery}
+              onChange={(text) => handleSearchChange(text)}
+              searchInputRef={searchInputRef}
+            />
+            <Pressable
+              // onPress={handleSearchPress}
+              // disabled={
+              //   isSearching || !searchQuery.trim() || !hasGoogleMapsApiKey
+              // }
+              style={[styles.searchButton, { backgroundColor: colors.primary }]}
+            >
+              <Ionicons name="search" size={18} color={colors.white} />
+              <Text style={[styles.searchButtonText, { color: colors.white }]}>
+                {/* {isSearching ? "Searching..." : "Search"} */}Search
+              </Text>
+            </Pressable>
           </View>
 
           <View style={styles.mapSection}>
@@ -269,7 +281,7 @@ const SafetyZone = () => {
                 },
               ]}
             >
-              {hasGoogleMapsApiKey ? (
+              {hasGoogleMapsApiKey && region ? (
                 <>
                   <MapView
                     ref={mapRef}
@@ -287,13 +299,17 @@ const SafetyZone = () => {
                     maxZoomLevel={18}
                   >
                     {crimeLocations.map((loc, index) => (
-                      <Marker
+                      <Circle
                         key={`${loc.latitude}-${loc.longitude}-${index}`}
-                        coordinate={{
+                        center={{
                           latitude: loc.latitude,
                           longitude: loc.longitude,
                         }}
-                        title={loc.crimeType}
+                        radius={200}
+                        fillColor={getCrimeColor(loc.crimeType).concat("50")}
+                        strokeColor={getCrimeColor(loc.crimeType)}
+                        strokeWidth={1}
+                        // title={loc.crimeType}  //REMOVE
                       />
                     ))}
                   </MapView>
@@ -327,9 +343,9 @@ const SafetyZone = () => {
                   <Text
                     style={[styles.mapUnavailableText, { color: colors.text }]}
                   >
-                    Google Maps API key is missing. Set GOOGLE_MAPS_API_KEY for
-                    this EAS profile.
+                    Map is loading. Please wait...
                   </Text>
+                  <ActivityIndicator size={"large"} color={colors.primary} />
                 </View>
               )}
             </View>
@@ -389,13 +405,17 @@ const SafetyZone = () => {
             showsMyLocationButton={false}
           >
             {crimeLocations.map((loc, index) => (
-              <Marker
+              <Circle
                 key={`${loc.latitude}-${loc.longitude}-${index}`}
-                coordinate={{
+                center={{
                   latitude: loc.latitude,
                   longitude: loc.longitude,
                 }}
-                title={loc.crimeType}
+                radius={200}
+                fillColor={getCrimeColor(loc.crimeType).concat("50")}
+                strokeColor={getCrimeColor(loc.crimeType)}
+                strokeWidth={1}
+                // title={loc.crimeType}  //REMOVE
               />
             ))}
           </MapView>
@@ -485,6 +505,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 18,
   },
+  searchButton: {
+    position: "absolute",
+    right: 14,
+    top: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  searchButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
   mapSection: {
     flex: 1,
   },
@@ -506,6 +541,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    gap: 12,
     paddingHorizontal: 20,
   },
   mapUnavailableText: {

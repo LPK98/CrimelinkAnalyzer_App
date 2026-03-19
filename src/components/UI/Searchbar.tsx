@@ -2,7 +2,13 @@ import { useTheme } from "@/src/theme/ThemeProvider";
 import React from "react";
 import { TextInput, View } from "react-native";
 
-const Searchbar = () => {
+type SearchbarProps = {
+  onChange: (text: string) => void;
+  value: string;
+  searchInputRef: React.RefObject<HTMLInputElement | null>;
+};
+
+const Searchbar = ({ onChange, value, searchInputRef }: SearchbarProps) => {
   const { colors } = useTheme();
 
   return (
@@ -19,6 +25,9 @@ const Searchbar = () => {
           backgroundColor: "#11162F",
         }}
         placeholderTextColor="gray"
+        value={value}
+        onChangeText={onChange}
+        ref={searchInputRef}
       />
     </View>
   );

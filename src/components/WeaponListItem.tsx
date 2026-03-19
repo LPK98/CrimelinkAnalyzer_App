@@ -14,6 +14,7 @@ const WeaponListItem: React.FC<weaponListItemType> = ({
   const { colors } = useTheme();
   const weaponName = weapon?.weaponType ?? name ?? "Unknown Weapon";
   const serialNo = weapon?.serialNumber;
+  const weaponImageUrl = weapon?.imageUrl;
 
   const handlePress = () => {
     if (!serialNo) return;
@@ -30,6 +31,7 @@ const WeaponListItem: React.FC<weaponListItemType> = ({
         registerDate: weapon?.registerDate
           ? String(weapon.registerDate)
           : undefined,
+        imageUrl: weaponImageUrl,
       },
     });
   };
@@ -52,7 +54,9 @@ const WeaponListItem: React.FC<weaponListItemType> = ({
         }}
       >
         <Image
-          source={imageUrl ?? images.logo}
+          source={
+            weaponImageUrl ? { uri: weaponImageUrl } : (imageUrl ?? images.logo)
+          }
           style={{ width: 50, height: 50 }}
         />
         <View

@@ -89,8 +89,10 @@ const SafetyZone = () => {
   const fullMapRef = React.useRef<MapView>(null);
   const [region, setRegion] = useState<Region | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [crimeLocations, setCrimeLocations] = useState<CrimeLocationType[]>([]);
   const hasGoogleMapsApiKey = Boolean(appConfig.googleMapsApiKey?.trim());
+  const searchInputRef = React.useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const loadLocation = async () => {
@@ -116,6 +118,12 @@ const SafetyZone = () => {
     loadLocation();
     fetchLocations();
   }, []);
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    console.log("Search query:", text); //REMOVE
+    // IMPLEMENT: Add autocomplete and searching function
+  };
 
   const fetchLocations = async () => {
     try {
@@ -240,7 +248,23 @@ const SafetyZone = () => {
               },
             ]}
           >
-            <Searchbar />
+            <Searchbar
+              value={searchQuery}
+              onChange={(text) => handleSearchChange(text)}
+              searchInputRef={searchInputRef}
+            />
+            <Pressable
+              // onPress={handleSearchPress}
+              // disabled={
+              //   isSearching || !searchQuery.trim() || !hasGoogleMapsApiKey
+              // }
+              style={[styles.searchButton, { backgroundColor: colors.primary }]}
+            >
+              <Ionicons name="search" size={18} color={colors.white} />
+              <Text style={[styles.searchButtonText, { color: colors.white }]}>
+                {/* {isSearching ? "Searching..." : "Search"} */}Search
+              </Text>
+            </Pressable>
           </View>
 
           <View style={styles.mapSection}>
@@ -480,6 +504,21 @@ const styles = StyleSheet.create({
   searchCard: {
     borderWidth: 1,
     borderRadius: 18,
+  },
+  searchButton: {
+    position: "absolute",
+    right: 14,
+    top: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  searchButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   mapSection: {
     flex: 1,

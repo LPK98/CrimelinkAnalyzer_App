@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ScrollView,
   StyleSheet,
@@ -14,29 +15,29 @@ type FaqItem = {
 
 const FAQ_ITEMS: FaqItem[] = [
   {
-    question: "How can I contact support?",
-    answer:
-      "You can contact support via call or email from the Contact Us page.",
+    question: "faq.q1",
+    answer: "faq.a1",
   },
   {
-    question: "How long does it take to get a response?",
-    answer: "Typically within 24 hours.",
+    question: "faq.q2",
+    answer: "faq.a2",
   },
   {
-    question: "Is my data secure?",
-    answer: "Yes, we use secure encryption and authentication methods.",
+    question: "faq.q3",
+    answer: "faq.a3",
   },
   {
-    question: "Can I track my reports?",
-    answer: "Yes, you can track reports in real-time within the app.",
+    question: "faq.q4",
+    answer: "faq.a4",
   },
   {
-    question: "How do I reset my password?",
-    answer: 'Use the "Forgot Password" option on the login screen.',
+    question: "faq.q5",
+    answer: "faq.a5",
   },
 ];
 
 const FAQPage: React.FC = () => {
+  const { t } = useTranslation();
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const handleToggle = (index: number) => {
@@ -49,7 +50,7 @@ const FAQPage: React.FC = () => {
       contentContainerStyle={styles.contentContainer}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={styles.title}>Frequently Asked Questions</Text>
+      <Text style={styles.title}>{t("faq.title")}</Text>
 
       <View style={styles.faqList}>
         {FAQ_ITEMS.map((item, index) => {
@@ -63,16 +64,16 @@ const FAQPage: React.FC = () => {
                 onPress={() => handleToggle(index)}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 accessibilityRole="button"
-                accessibilityLabel={item.question}
+                accessibilityLabel={t(item.question)}
                 accessibilityHint="Double tap to expand or collapse the answer"
                 accessibilityState={{ expanded: isOpen }}
               >
-                <Text style={styles.questionText}>{item.question}</Text>
+                <Text style={styles.questionText}>{t(item.question)}</Text>
                 <Text style={styles.indicator}>{isOpen ? "-" : "+"}</Text>
               </TouchableOpacity>
 
               {isOpen ? (
-                <Text style={styles.answerText}>{item.answer}</Text>
+                <Text style={styles.answerText}>{t(item.answer)}</Text>
               ) : null}
             </View>
           );

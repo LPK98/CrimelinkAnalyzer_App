@@ -1,4 +1,5 @@
 import Ionicons from "@expo/vector-icons/build/Ionicons";
+import { useTranslation } from "react-i18next";
 import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -19,6 +20,7 @@ const WeaponRequestCard = ({
   requestedAt,
   resolvedAt,
 }: WeaponRequestCardProps) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const normalizedStatus = status?.toUpperCase() ?? "PENDING";
   const statusColor =

@@ -1,7 +1,9 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { TextInput, View } from "react-native";
 
 const Searchbar = () => {
+  const { t } = useTranslation();
   return (
     <View style={{ padding: 10 }}>
       <TextInput

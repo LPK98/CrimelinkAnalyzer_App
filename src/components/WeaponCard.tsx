@@ -1,7 +1,8 @@
-import { Image, Pressable, Text, View, StyleSheet } from "react-native";
-import { useTheme } from "../theme/ThemeProvider";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
+import { useTranslation } from "react-i18next";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { ProgressBar } from "react-native-paper";
+import { useTheme } from "../theme/ThemeProvider";
 
 export type WeaponCardProps = {
   name: string;
@@ -18,6 +19,7 @@ const WeaponCard = ({
   totalAmmo,
   dueDate,
 }: WeaponCardProps) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const today = new Date();
   const dueDateObj = new Date(dueDate);

@@ -1,14 +1,12 @@
+import { isDutyTrackingEnabled, setDutyTrackingEnabled } from "@/src/auth/auth";
 import { initLocationDB } from "@/src/services/location/locationDB";
-import {
-  isDutyTrackingEnabled,
-  setDutyTrackingEnabled,
-} from "@/src/auth/auth";
 import {
   startTracking,
   stopTracking,
 } from "@/src/services/location/locationTracker";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, Switch, Text, View } from "react-native";
 
 type DutyToggleScreenProps = {
@@ -18,6 +16,7 @@ type DutyToggleScreenProps = {
 export default function DutyToggleScreen({
   onDutyStatusChange,
 }: DutyToggleScreenProps) {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [isOnDuty, setIsOnDuty] = useState(false);
   const [isDutyStatusLoading, setIsDutyStatusLoading] = useState(true);

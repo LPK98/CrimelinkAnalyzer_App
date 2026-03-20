@@ -1,5 +1,6 @@
 import { Bell, Clock, MapPin, X } from "lucide-react-native";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Alert,
@@ -13,6 +14,9 @@ import {
 } from "react-native";
 import { Calendar, Calendar as RNCalendar } from "react-native-calendars";
 
+import Ionicons from "@expo/vector-icons/build/Ionicons";
+import { router } from "expo-router";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getUser } from "../../src/auth/auth";
 import {
   getOfficerDuties,
@@ -21,9 +25,6 @@ import {
 import * as leaveService from "../../src/services/leaveService";
 import type { DutyAssignment, DutyDetail } from "../../src/types/duty";
 import type { LeaveRequest } from "../../src/types/leave";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import Ionicons from "@expo/vector-icons/build/Ionicons";
 
 type MarkedDates = Record<
   string,
@@ -42,6 +43,7 @@ type Props = {
 };
 
 export default function DutyCalendarScreen({ navigation, route }: Props) {
+  const { t } = useTranslation();
   const [officerId, setOfficerId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});

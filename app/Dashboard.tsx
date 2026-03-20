@@ -6,6 +6,7 @@ import { useAuth } from "@/src/hooks/useAuth";
 import { useTheme } from "@/src/theme/ThemeProvider";
 import { Href, router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Animated,
   Dimensions,
@@ -23,6 +24,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SIDEBAR_WIDTH = Math.min(320, Math.floor(SCREEN_WIDTH * 0.75));
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { user, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -54,23 +56,31 @@ const Dashboard = () => {
     //   icon: icons.faceRecognition,
     // },  //REMOVE: Not implemented yet
     {
-      name: "Weapon Management",
+      name: t("dashboard.weaponManagement"),
       route: "/(screens)/Weapon",
       icon: icons.weapon,
     },
     {
-      name: "Number Plates Lookup",
+      name: t("dashboard.numberPlateLookup"),
       route: "/(screens)/Plate",
       icon: icons.numberPlate,
     },
-    { name: "Duty Management", route: "/(screens)/Duty", icon: icons.duty },
     {
-      name: "Safety Zone",
+      name: t("dashboard.dutyManagement"),
+      route: "/(screens)/Duty",
+      icon: icons.duty,
+    },
+    {
+      name: t("dashboard.safetyZone"),
       route: "/(screens)/SafetyZone",
       icon: icons.safetyZone,
     },
-    { name: "Schedule", route: "/Dashboard", icon: icons.schedule },
-    { name: "Messages", route: "/Chat", icon: icons.message },
+    {
+      name: t("dashboard.schedule"),
+      route: "/Dashboard",
+      icon: icons.schedule,
+    },
+    { name: t("dashboard.messages"), route: "/Chat", icon: icons.message },
   ];
 
   return (
@@ -121,7 +131,7 @@ const Dashboard = () => {
               <Text
                 style={{ color: colors.white, fontSize: 16, fontWeight: "600" }}
               >
-                Logout
+                {t("dashboard.logout")}
               </Text>
             </Pressable>
           </View>

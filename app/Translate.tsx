@@ -1,5 +1,7 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Image,
   ScrollView,
@@ -8,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import i18n from "./i18n";
 
 type LanguageOption = {
   name: AppLanguage;
@@ -156,14 +159,54 @@ const LANGUAGE_DISPLAY_NAMES: Record<
 };
 
 const Translate: React.FC = () => {
+  const { i18n: activeI18n } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] =
     useState<AppLanguage>("English");
   const [appLanguage, setAppLanguage] = useState<AppLanguage>("English");
 
   const labels = UI_TRANSLATIONS[appLanguage];
 
+  const handleGlobalLanguageChange = useCallback(
+    async (lng: AppLanguage) => {
+      activeI18n.changeLanguage(lng);
+
+      try {
+        await AsyncStorage.setItem("lang", lng);
+      } catch (error) {
+        console.log("Language save skipped:", error);
+      }
+    },
+    [activeI18n],
+  );
+
+  useEffect(() => {
+    const restoreLanguage = async () => {
+      try {
+        const savedLang = (await AsyncStorage.getItem(
+          "lang",
+        )) as AppLanguage | null;
+
+        if (savedLang) {
+          setSelectedLanguage(savedLang);
+          setAppLanguage(savedLang);
+          i18n.changeLanguage(savedLang);
+        }
+      } catch (error) {
+        console.log("Language restore skipped:", error);
+      }
+    };
+
+    restoreLanguage();
+  }, []);
+
+  useEffect(() => {
+    handleGlobalLanguageChange(selectedLanguage);
+    setAppLanguage(selectedLanguage);
+  }, [handleGlobalLanguageChange, selectedLanguage]);
+
   const handleUpdateLanguage = () => {
     setAppLanguage(selectedLanguage);
+    handleGlobalLanguageChange(selectedLanguage);
     console.log("Selected language:", selectedLanguage);
   };
 

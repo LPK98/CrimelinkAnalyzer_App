@@ -1,8 +1,10 @@
 import { router } from "expo-router";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 
 const FaceDetection = () => {
+  const { t } = useTranslation();
   return (
     <View className="w-full h-full flex items-center justify-center">
       <Pressable

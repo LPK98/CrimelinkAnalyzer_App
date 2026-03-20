@@ -1,7 +1,7 @@
-import React from "react";
-import { Image, Pressable, Text, View } from "react-native";
-import { icons } from "../constants/icons";
 import { Feather } from "@expo/vector-icons";
+import React from "react";
+import { useTranslation } from "react-i18next";
+import { Image, Pressable, Text, View } from "react-native";
 import { images } from "../constants/images";
 import { useTheme } from "../theme/ThemeProvider";
 
@@ -12,6 +12,7 @@ type topbarProps = {
 };
 
 const TopBar: React.FC<topbarProps> = ({ openSidebar, closeSidebar, name }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   return (

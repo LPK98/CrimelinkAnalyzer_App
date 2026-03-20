@@ -10,10 +10,12 @@ import { AssignedWeapon, WeaponRequestType } from "@/src/types/weaponTypes";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { router } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Weapon = () => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [weapons, setWeapons] = useState<AssignedWeapon[]>([]);
   const [requests, setRequests] = useState<WeaponRequestType[]>([]);

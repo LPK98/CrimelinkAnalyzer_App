@@ -10,12 +10,14 @@ import * as LocalAuthentication from "expo-local-authentication";
 import { router } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Alert, Text, TouchableOpacity, View } from "react-native";
 import { Switch } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DutyToggleScreen from "./DutyToggleScreen";
 
 export default function Settings() {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [isBiometricEnrolled, setIsBiometricEnrolled] = useState(false);

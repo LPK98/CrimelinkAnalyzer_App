@@ -28,11 +28,13 @@ import {
 
 import { useAuth } from "@/src/hooks/useAuth";
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { db } from "../firebase";
 
 const { width } = Dimensions.get("window");
 
 const Chat = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<

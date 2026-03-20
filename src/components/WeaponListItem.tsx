@@ -1,16 +1,18 @@
-import { Image, Pressable, Text, View } from "react-native";
-import { useTheme } from "../theme/ThemeProvider";
-import { router } from "expo-router";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
+import { router } from "expo-router";
 import React from "react";
-import { weaponListItemType } from "../types/weaponTypes";
+import { useTranslation } from "react-i18next";
+import { Image, Pressable, Text, View } from "react-native";
 import { images } from "../constants/images";
+import { useTheme } from "../theme/ThemeProvider";
+import { weaponListItemType } from "../types/weaponTypes";
 
 const WeaponListItem: React.FC<weaponListItemType> = ({
   weapon,
   name,
   imageUrl,
 }) => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const weaponName = weapon?.weaponType ?? name ?? "Unknown Weapon";
   const serialNo = weapon?.serialNumber;

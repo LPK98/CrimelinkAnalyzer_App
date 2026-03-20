@@ -1,9 +1,13 @@
 import { ThemeProvider } from "@/src/theme/ThemeProvider";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router, Stack, usePathname } from "expo-router";
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import AuthProvider from "../src/context/AuthContext";
 import { useAuth } from "../src/hooks/useAuth";
 import "./global.css";
+import "./i18n";
+import i18n from "./i18n";
 
 function Guard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -24,6 +28,36 @@ function Guard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const { i18n: activeI18n } = useTranslation();
+  const [, setLanguageVersion] = React.useState(0);
+
+  useEffect(() => {
+    const restoreLanguage = async () => {
+      try {
+        const savedLang = await AsyncStorage.getItem("lang");
+        if (savedLang) {
+          i18n.changeLanguage(savedLang);
+        }
+      } catch (error) {
+        console.log("Language bootstrap skipped:", error);
+      }
+    };
+
+    restoreLanguage();
+  }, []);
+
+  useEffect(() => {
+    const handleLanguageChanged = () => {
+      setLanguageVersion((version) => version + 1);
+    };
+
+    activeI18n.on("languageChanged", handleLanguageChanged);
+
+    return () => {
+      activeI18n.off("languageChanged", handleLanguageChanged);
+    };
+  }, [activeI18n]);
+
   return (
     <AuthProvider>
       <Guard>

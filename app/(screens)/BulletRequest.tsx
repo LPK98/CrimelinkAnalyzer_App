@@ -4,11 +4,13 @@ import { useTheme } from "@/src/theme/ThemeProvider";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import Slider from "@react-native-community/slider";
 import { router } from "expo-router";
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import * as Progress from "react-native-progress";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const BulletRequest = () => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
 
   return (

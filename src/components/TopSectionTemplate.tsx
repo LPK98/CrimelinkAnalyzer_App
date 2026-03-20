@@ -1,9 +1,10 @@
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { images } from "../constants/images";
-import { router } from "expo-router";
-import Ionicons from "@expo/vector-icons/build/Ionicons";
 
 type props = {
   heading?: string;
@@ -16,6 +17,7 @@ const TopSectionTemplate: React.FC<props> = ({
   subHeading,
   children,
 }) => {
+  const { t } = useTranslation();
   return (
     <View style={{ flex: 1, backgroundColor: "#0B0C1A" }}>
       <View
@@ -45,10 +47,10 @@ const TopSectionTemplate: React.FC<props> = ({
             }}
           >
             <Text style={{ fontSize: 20, fontWeight: "800", color: "#FFFFFF" }}>
-              {heading ?? "Crime Link Analyzer"}
+              {heading ?? t("common.brand")}
             </Text>
             <Text style={{ fontSize: 14, fontWeight: "500", color: "#FFFFFF" }}>
-              {subHeading ?? "Sub Heading"}
+              {subHeading ?? t("topSection.defaultSubHeading")}
             </Text>
           </View>
         </View>

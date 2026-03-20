@@ -8,6 +8,7 @@ import Slider from "@react-native-community/slider";
 import { ImageBackground } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   Pressable,
@@ -28,6 +29,7 @@ type WeaponRouteParams = {
 };
 
 const WeaponRequest = () => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { user } = useAuth();
   const [ammoCount, setAmmoCount] = useState(0);

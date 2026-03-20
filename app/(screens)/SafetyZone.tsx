@@ -5,6 +5,7 @@ import { getCrimeLocations } from "@/src/services/safetyzoneService";
 import { CrimeLocationType } from "@/src/types/SafetyzoneTypes";
 import * as Location from "expo-location";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ActivityIndicator, Dimensions, Text, View } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -21,6 +22,7 @@ const SRI_LANKA_BOUNDS = {
 };
 
 const SafetyZone = () => {
+  const { t } = useTranslation();
   const { width, height } = Dimensions.get("window");
   const ASPECT_RATIO = width / height;
   const LATITUDE_DELTA = 0.05;

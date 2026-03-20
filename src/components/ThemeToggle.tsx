@@ -1,7 +1,9 @@
+import { useTranslation } from "react-i18next";
 import { Pressable, Text, View } from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
 
 export default function ThemeToggle() {
+  const { t } = useTranslation();
   const { mode, setMode, colors } = useTheme();
 
   const Item = ({ value }: { value: "light" | "dark" | "system" }) => (

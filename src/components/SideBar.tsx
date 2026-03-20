@@ -1,5 +1,6 @@
 import { Href, router, usePathname } from "expo-router";
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { useAuth } from "../hooks/useAuth";
@@ -17,6 +18,7 @@ type SideBarItem = {
 };
 
 const SideBar = () => {
+  const { t } = useTranslation();
   const { colors } = useTheme();
   const { user, logout } = useAuth();
   const pathname = usePathname();
@@ -24,35 +26,35 @@ const SideBar = () => {
   const menuItems: SideBarItem[] = [
     {
       key: "dashboard",
-      label: "Dashboard",
+      label: t("sidebar.dashboard"),
       route: "/Dashboard",
       iconName: "dashboard",
       status: "active",
     },
     {
       key: "contact-us",
-      label: "Contact Us",
+      label: t("sidebar.contactUs"),
       iconName: "contact-support",
       status: "active",
       route: "/ContactUs",
     },
     {
       key: "translate",
-      label: "Translate",
+      label: t("sidebar.translate"),
       iconName: "translate",
       status: "active",
       route: "/Translate",
     },
     {
       key: "faq",
-      label: "FAQ",
+      label: t("sidebar.faq"),
       iconName: "help",
       status: "active",
       route: "/FAQPage",
     },
     {
       key: "settings",
-      label: "Settings",
+      label: t("sidebar.settings"),
       route: "/Settings",
       iconName: "settings",
       status: "active",
@@ -118,10 +120,10 @@ const SideBar = () => {
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ color: colors.text, fontSize: 16, fontWeight: "700" }}>
-            {`Welcome ${user?.name || "User"}`}
+            {t("sidebar.welcome", { name: user?.name || "User" })}
           </Text>
           <Text style={{ color: colors.sidebarItemMutedText, fontSize: 12 }}>
-            Criminal Link Analyzer
+            {t("common.brand")}
           </Text>
         </View>
       </View>
@@ -135,7 +137,7 @@ const SideBar = () => {
           marginBottom: 12,
         }}
       >
-        NAVIGATION
+        {t("sidebar.navigation")}
       </Text>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
@@ -257,7 +259,7 @@ const SideBar = () => {
           <Text
             style={{ color: colors.danger, fontWeight: "600", fontSize: 15 }}
           >
-            Logout
+            {t("sidebar.logout")}
           </Text>
         </View>
       </Pressable>

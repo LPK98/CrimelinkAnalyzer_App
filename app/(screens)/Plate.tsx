@@ -4,6 +4,7 @@ import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ActivityIndicator,
   FlatList,
@@ -13,9 +14,9 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { API_BASE_URL } from "../../src/api/api";
 import type { Vehicle } from "../../src/types/vehicle";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 type VehicleForm = {
   numberPlate: string;
@@ -44,6 +45,7 @@ function toYYYYMMDD(date: Date) {
 }
 
 export default function PlateRegistryScreen() {
+  const { t } = useTranslation();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loading, setLoading] = useState(false);
 

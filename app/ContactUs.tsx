@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Dimensions,
   Image,
@@ -16,6 +17,7 @@ const fontScale = Math.min(Math.max(width / 375, 0.9), 1.15);
 const fs = (size: number) => Math.round(size * fontScale);
 
 const ContactUs: React.FC = () => {
+  const { t } = useTranslation();
   const [subject, setSubject] = useState<string>("");
   const [message, setMessage] = useState<string>("");
 
@@ -40,7 +42,7 @@ const ContactUs: React.FC = () => {
     >
       <View style={styles.headerSection}>
         <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
-          <Text style={styles.backButtonText}>Back</Text>
+          <Text style={styles.backButtonText}>{t("common.back")}</Text>
         </TouchableOpacity>
 
         <View style={styles.headerRow}>
@@ -53,45 +55,45 @@ const ContactUs: React.FC = () => {
           </View>
 
           <TouchableOpacity style={styles.profileButton} activeOpacity={0.85}>
-            <Text style={styles.profileButtonText}>Profile</Text>
+            <Text style={styles.profileButtonText}>{t("common.profile")}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <View style={styles.mainCard}>
-        <Text style={styles.pageTitle}>Contact Us</Text>
+        <Text style={styles.pageTitle}>{t("contact.title")}</Text>
 
         <View style={styles.contactOptionsRow}>
           <TouchableOpacity style={styles.optionCard} activeOpacity={0.85}>
             <View style={styles.optionIconCircle}>
               <Text style={styles.optionIconText}>C</Text>
             </View>
-            <Text style={styles.optionTitle}>Call Support</Text>
+            <Text style={styles.optionTitle}>{t("contact.callSupport")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.optionCard} activeOpacity={0.85}>
             <View style={styles.optionIconCircle}>
               <Text style={styles.optionIconText}>@</Text>
             </View>
-            <Text style={styles.optionTitle}>Email Us</Text>
+            <Text style={styles.optionTitle}>{t("contact.emailUs")}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.formSection}>
-          <Text style={styles.inputLabel}>Subject</Text>
+          <Text style={styles.inputLabel}>{t("contact.subject")}</Text>
           <TextInput
             value={subject}
             onChangeText={setSubject}
-            placeholder="What can we help you with?"
+            placeholder={t("contact.subjectPlaceholder")}
             placeholderTextColor="#7A8294"
             style={styles.subjectInput}
           />
 
-          <Text style={styles.inputLabel}>Message</Text>
+          <Text style={styles.inputLabel}>{t("contact.message")}</Text>
           <TextInput
             value={message}
             onChangeText={setMessage}
-            placeholder="Enter your message here..."
+            placeholder={t("contact.messagePlaceholder")}
             placeholderTextColor="#7A8294"
             style={styles.messageInput}
             multiline
@@ -104,7 +106,7 @@ const ContactUs: React.FC = () => {
           activeOpacity={0.9}
           onPress={handleSendMessage}
         >
-          <Text style={styles.sendButtonText}>Send Message</Text>
+          <Text style={styles.sendButtonText}>{t("contact.sendMessage")}</Text>
         </TouchableOpacity>
 
         <View style={styles.brandingSection}>
@@ -113,7 +115,7 @@ const ContactUs: React.FC = () => {
             style={styles.logoImage}
             resizeMode="contain"
           />
-          <Text style={styles.brandText}>Crime Link Analyzer</Text>
+          <Text style={styles.brandText}>{t("common.brand")}</Text>
         </View>
       </View>
     </ScrollView>

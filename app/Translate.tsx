@@ -30,10 +30,6 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
   { name: "Sinhala", flag: "🇱🇰" },
   { name: "Tamil", flag: "🇱🇰" },
   { name: "English", flag: "🇺🇸" },
-  { name: "Spanish", flag: "🇪🇸" },
-  { name: "French", flag: "🇫🇷" },
-  { name: "German", flag: "🇩🇪" },
-  { name: "Chinese", flag: "🇨🇳" },
 ];
 
 const Translate: React.FC = () => {

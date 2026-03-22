@@ -242,7 +242,9 @@ export default function LoginScreen() {
         {/* FORGOT PASSWORD */}
         <Pressable
           disabled={loading}
-          onPress={() => console.log("Fogot Password pressed")}
+          onPress={() =>
+            alert("Please contact your administrator to reset your password.")
+          }
         >
           <Text style={styles.forgot}>Forgot Password</Text>
         </Pressable>

@@ -58,7 +58,7 @@ const WeaponRequestCard = ({
           width: 68,
           height: 68,
           borderRadius: 18,
-          backgroundColor: colors.primaryAccent ?? colors.border,
+          backgroundColor: colors.border,
           alignItems: "center",
           justifyContent: "center",
         }}

@@ -2,6 +2,8 @@ import { Image, Pressable, Text, View, StyleSheet } from "react-native";
 import { useTheme } from "../theme/ThemeProvider";
 import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { ProgressBar } from "react-native-paper";
+import { images } from "../constants/images";
+import { weaponType } from "../types/weaponTypes";
 
 export type WeaponCardProps = {
   name: string;
@@ -9,6 +11,7 @@ export type WeaponCardProps = {
   ammoCount: number;
   totalAmmo: number;
   dueDate: string;
+  weapon?: weaponType;
 };
 
 const WeaponCard = ({
@@ -17,8 +20,16 @@ const WeaponCard = ({
   ammoCount,
   totalAmmo,
   dueDate,
+  weapon,
 }: WeaponCardProps) => {
   const { colors } = useTheme();
+  const displayName = name?.trim() ? name : "Unknown";
+  const imageUri =
+    weapon?.imageUrl?.trim() ??
+    (
+      weapon as (weaponType & { weapon?: { imageUrl?: string } }) | undefined
+    )?.weapon?.imageUrl?.trim();
+  const imageSource = imageUri ? { uri: imageUri } : images.logo;
   const today = new Date();
   const dueDateObj = new Date(dueDate);
   const isOverdue = dueDateObj < today;
@@ -36,9 +47,10 @@ const WeaponCard = ({
         width: "100%",
       }}
     >
-      <View>
+      <View style={{ backgroundColor: colors.border, padding: 2, borderRadius: 10 }}>
         <Image
-          source={{ uri: "../../assets/images/logo.png" }}
+          source={imageSource}
+          resizeMode="contain"
           style={{ width: 150, height: 150 }}
         />
       </View>
@@ -61,11 +73,11 @@ const WeaponCard = ({
           <Text
             style={{ color: colors.text, fontWeight: "bold", fontSize: 18 }}
           >
-            {name}
+            {displayName}
           </Text>
           <View
             style={{
-              backgroundColor: colors.primaryAccent,
+              backgroundColor: colors.primaryAccent.concat("20"),
               paddingHorizontal: 8,
               paddingVertical: 4,
               borderRadius: 10,

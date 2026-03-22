@@ -180,11 +180,18 @@ const Weapon = () => {
                 weapons.map((weapon, index) => (
                   <WeaponCard
                     key={`${String(weapon.id ?? "weapon")}-${index}`}
-                    name={weapon.weaponType ?? "Unknown"}
+                    name={
+                      weapon.weaponType ??
+                      (weapon as AssignedWeapon & {
+                        weapon?: { weaponType?: string };
+                      }).weapon?.weaponType ??
+                      "Unknown"
+                    }
                     status={weapon.status ?? "N/A"}
                     ammoCount={weapon.ammoCount ?? 0}
                     totalAmmo={weapon.totalAmmo ?? 0}
                     dueDate={weapon.dueDate ?? "N/A"}
+                    weapon={weapon}
                   />
                 ))
               )}

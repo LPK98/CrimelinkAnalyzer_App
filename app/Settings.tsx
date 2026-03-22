@@ -4,13 +4,22 @@ import {
   setBiometricsEnabled as setBiometricsEnabledPref,
 } from "@/src/auth/auth";
 import ThemeToggle from "@/src/components/ThemeToggle";
+import { images } from "@/src/constants/images";
 import { useTheme } from "@/src/theme/ThemeProvider";
+import Ionicons from "@expo/vector-icons/build/Ionicons";
 import { useFocusEffect } from "@react-navigation/native";
 import * as LocalAuthentication from "expo-local-authentication";
 import { router } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
 import React, { useCallback, useState } from "react";
-import { Alert, Text, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  ImageBackground,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Switch } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DutyToggleScreen from "./DutyToggleScreen";
@@ -137,108 +146,257 @@ export default function Settings() {
   };
 
   return (
-    <SafeAreaView
-      style={{
-        flex: 1,
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        gap: 20,
-        backgroundColor: colors.background,
-      }}
-    >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-        <TouchableOpacity
-          onPress={() => router.replace("/Dashboard")}
-          className="p-1"
-        >
-          <ChevronLeft size={28} color={colors.text} />
-        </TouchableOpacity>
-        <Text style={{ color: colors.text, fontSize: 24, fontWeight: "bold" }}>
-          Settings
-        </Text>
-      </View>
-      <View>
-        <Text
-          style={{
-            fontSize: 18,
-            marginBottom: 10,
-            fontWeight: "bold",
-            color: colors.text,
-          }}
-        >
-          Duty Status
-        </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            paddingHorizontal: 8,
-            marginBottom: 8,
-          }}
-        >
-          <Text style={{ color: colors.text, fontSize: 14 }}>Current:</Text>
-          <Text
-            style={
-              isDutyStatusLoading
-                ? { color: colors.text, fontWeight: "bold" }
-                : isDutyTrackingEnabled
-                  ? { color: "green", fontWeight: "bold" }
-                  : { color: "red", fontWeight: "bold" }
-            }
+    <SafeAreaView style={styles.safeArea}>
+      <ImageBackground
+        style={styles.bg}
+        source={images.bgApp}
+        resizeMode="cover"
+      >
+        <View style={[styles.container, { backgroundColor: colors.overlay }]}>
+          <View
+            style={[
+              styles.headerCard,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
           >
-            {isDutyStatusLoading
-              ? "Checking..."
-              : isDutyTrackingEnabled
-                ? "On"
-                : "Off"}
-          </Text>
-        </View>
-        <DutyToggleScreen onDutyStatusChange={handleDutyStatusChange} />
-      </View>
+            <TouchableOpacity
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.push("/Dashboard")
+              }
+              style={[
+                styles.backButton,
+                {
+                  backgroundColor: colors.iconSurface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
+            </TouchableOpacity>
 
-      <View style={{ gap: 10, marginBottom: 14 }}>
-        <Text style={{ color: colors.text, fontWeight: "bold", fontSize: 18 }}>
-          Theme Mode
-        </Text>
-        <ThemeToggle />
-      </View>
+            <View style={styles.headerTextWrap}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>
+                Settings
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: colors.text }]}>
+                Personalize app behavior and security preferences
+              </Text>
+            </View>
+          </View>
 
-      <View style={{ gap: 10, marginBottom: 14 }}>
-        <Text style={{ color: colors.text, fontSize: 18, fontWeight: "bold" }}>
-          Enable biometric Login
-        </Text>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            gap: 10,
-            paddingHorizontal: 10,
-          }}
-        >
-          <Text style={{ fontSize: 14, color: colors.text }}>
-            {isPrefLoading
-              ? "Checking..."
-              : isBiometricEnabled
-                ? "Enabled"
-                : "Disabled"}
-          </Text>
-          <Switch
-            value={isBiometricEnabled}
-            onValueChange={handleBiometricToggle}
-            disabled={isPrefLoading || isUpdatingBiometricPref}
-          />
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
+            <View
+              style={[
+                styles.sectionCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Duty Status
+              </Text>
+
+              <View style={styles.statusRow}>
+                <Text style={[styles.statusLabel, { color: colors.text }]}>
+                  Current
+                </Text>
+                <View
+                  style={[
+                    styles.statusPill,
+                    {
+                      backgroundColor: isDutyStatusLoading
+                        ? colors.iconSurface
+                        : isDutyTrackingEnabled
+                          ? "rgba(22,163,74,0.18)"
+                          : "rgba(220,38,38,0.18)",
+                      borderColor: isDutyStatusLoading
+                        ? colors.border
+                        : isDutyTrackingEnabled
+                          ? "rgba(22,163,74,0.45)"
+                          : "rgba(220,38,38,0.45)",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={
+                      isDutyStatusLoading
+                        ? [styles.statusPillText, { color: colors.text }]
+                        : isDutyTrackingEnabled
+                          ? [styles.statusPillText, { color: "#16A34A" }]
+                          : [styles.statusPillText, { color: colors.danger }]
+                    }
+                  >
+                    {isDutyStatusLoading
+                      ? "Checking..."
+                      : isDutyTrackingEnabled
+                        ? "On"
+                        : "Off"}
+                  </Text>
+                </View>
+              </View>
+
+              <DutyToggleScreen onDutyStatusChange={handleDutyStatusChange} />
+            </View>
+
+            <View
+              style={[
+                styles.sectionCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Theme Mode
+              </Text>
+              <ThemeToggle />
+            </View>
+
+            <View
+              style={[
+                styles.sectionCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                Biometric Login
+              </Text>
+
+              <View style={styles.bioRow}>
+                <Text style={[styles.bioStatusText, { color: colors.text }]}>
+                  {isPrefLoading
+                    ? "Checking..."
+                    : isBiometricEnabled
+                      ? "Enabled"
+                      : "Disabled"}
+                </Text>
+                <Switch
+                  value={isBiometricEnabled}
+                  onValueChange={handleBiometricToggle}
+                  disabled={isPrefLoading || isUpdatingBiometricPref}
+                  color={colors.primary}
+                />
+              </View>
+
+              {!isBiometricSupported ? (
+                <Text style={[styles.helperText, { color: colors.text }]}>
+                  Biometric authentication is not supported on this device.
+                </Text>
+              ) : !isBiometricEnrolled ? (
+                <Text style={[styles.helperText, { color: colors.text }]}>
+                  Set up Fingerprint/Face ID in device settings to enable this
+                  option.
+                </Text>
+              ) : (
+                <Text style={[styles.helperText, { color: colors.text }]}>
+                  Use Face ID or Fingerprint to quickly and securely sign in.
+                </Text>
+              )}
+            </View>
+          </ScrollView>
         </View>
-        {!isBiometricSupported ? (
-          <Text style={{ fontSize: 12, color: colors.text }}>
-            Biometric authentication is not supported on this device.
-          </Text>
-        ) : !isBiometricEnrolled ? (
-          <Text style={{ fontSize: 12, color: colors.text }}>
-            Set up Fingerprint/Face ID in device settings to enable this option.
-          </Text>
-        ) : null}
-      </View>
+      </ImageBackground>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  bg: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  headerCard: {
+    width: "100%",
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  headerSubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    opacity: 0.75,
+  },
+  scroll: {
+    flex: 1,
+    marginTop: 14,
+  },
+  scrollContent: {
+    paddingBottom: 28,
+    gap: 12,
+  },
+  sectionCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+    paddingHorizontal: 8,
+  },
+  statusLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  statusPill: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  statusPillText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  bioRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 6,
+    paddingHorizontal: 2,
+  },
+  bioStatusText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  helperText: {
+    fontSize: 13,
+    lineHeight: 18,
+    opacity: 0.85,
+  },
+});

@@ -12,6 +12,7 @@ export type weaponType = {
   status?: string;
   updatedDate?: Date;
   registerDate?: Date;
+  imageUrl?: string;
 };
 
 export type WeaponRequestType = {

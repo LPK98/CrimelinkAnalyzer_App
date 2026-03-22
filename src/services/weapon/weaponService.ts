@@ -1,10 +1,24 @@
 import { api } from "@/src/api/api";
-import { WeaponRequestType } from "@/src/types/weaponTypes";
+import { WeaponRequestType, weaponType } from "@/src/types/weaponTypes";
+
+const normalizeWeapon = (raw: any): weaponType => {
+  const imageUrl = raw?.imageUrl ?? raw?.image_url ?? raw?.photoUrl ?? undefined;
+
+  return {
+    serialNumber: raw?.serialNumber ?? raw?.serial_number,
+    weaponType: raw?.weaponType ?? raw?.weapon_type,
+    status: raw?.status,
+    updatedDate: raw?.updatedDate ?? raw?.updated_date,
+    registerDate: raw?.registerDate ?? raw?.register_date,
+    imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
+  };
+};
 
 export const getAllWeapons = async () => {
   try {
     const res = await api.get("/api/weapon/all");
-    return res.data;
+    const data = Array.isArray(res.data) ? res.data : [];
+    return data.map(normalizeWeapon);
   } catch (error) {
     console.error("Error fetching weapons:", error);
     throw error;

@@ -1,8 +1,11 @@
 import { ThemeProvider } from "@/src/theme/ThemeProvider";
 import { router, Stack, usePathname } from "expo-router";
 import React, { useEffect } from "react";
+import { BackHandler, Platform } from "react-native";
 import AuthProvider from "../src/context/AuthContext";
 import { useAuth } from "../src/hooks/useAuth";
+import { bootstrapLocationTracking } from "../src/services/location/locationBootstrap";
+import "../src/services/location/locationTracker";
 import "./global.css";
 
 function Guard({ children }: { children: React.ReactNode }) {
@@ -19,6 +22,30 @@ function Guard({ children }: { children: React.ReactNode }) {
       return;
     }
   }, [user, loading, pathname]);
+
+  useEffect(() => {
+    if (loading) return;
+
+    void bootstrapLocationTracking();
+  }, [loading]);
+
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+
+    const subscription = BackHandler.addEventListener(
+      "hardwareBackPress",
+      () => {
+        if (router.canGoBack()) {
+          router.back();
+          return true;
+        }
+
+        return false;
+      },
+    );
+
+    return () => subscription.remove();
+  }, []);
 
   return <>{children}</>;
 }

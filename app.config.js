@@ -16,7 +16,8 @@ const appName =
 export default {
   expo: {
     name: appName,
-    slug: "CrimelinkAnalyzer_app",
+    slug: "crimelink",
+    owner: "isiraexpoeass-organization",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/logo.png",
@@ -27,9 +28,17 @@ export default {
 
     ios: {
       supportsTablet: true,
+      config: {
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
+      },
       infoPlist: {
         NSLocationWhenInUseUsageDescription:
           "This app uses your location to show nearby places and reports.",
+        NSLocationAlwaysAndWhenInUseUsageDescription:
+          "Crime Link Analyzer needs your location even when the app is in the background during duty hours.",
+        NSLocationAlwaysUsageDescription:
+          "Crime Link Analyzer needs your location even when the app is in the background during duty hours.",
+        UIBackgroundModes: ["location"],
         NSFaceIDUsageDescription:
           "Allow Crime Link Analyzer to use Face ID to authenticate you.",
       },
@@ -44,7 +53,18 @@ export default {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      permissions: ["ACCESS_FINE_LOCATION"],
+      permissions: [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION",
+      ],
+      config: {
+        googleMaps: {
+          apiKey: process.env.GOOGLE_MAPS_API_KEY,
+        },
+      },
       package: "com.anonymous.CrimelinkAnalyzer_app",
       jsEngine: "hermes",
     },
@@ -70,6 +90,14 @@ export default {
       ],
       "expo-secure-store",
       "expo-sqlite",
+      [
+        "expo-location",
+        {
+          isAndroidBackgroundLocationEnabled: true,
+          isAndroidForegroundServiceEnabled: true,
+          isIosBackgroundLocationEnabled: true,
+        },
+      ],
     ],
 
     experiments: {
@@ -80,7 +108,7 @@ export default {
     extra: {
       router: {},
       eas: {
-        projectId: "ab5e7b7b-eb2e-49f5-9a61-01529d4cae27",
+        projectId: "cfc2ec4e-36f0-4781-a496-4c08aa07b763",
       },
       appEnv: ENV,
       apiUrl: process.env.API_URL,

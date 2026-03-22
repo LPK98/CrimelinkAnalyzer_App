@@ -1,50 +1,175 @@
-# Welcome to your Expo app 👋
+# CrimeLink Analyzer Mobile App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+React Native + Expo mobile client for the CrimeLink Analyzer platform.
 
-## Get started
+This app connects to:
 
-1. Install dependencies
+- CrimeLink backend APIs (authentication, duty, leave, announcements, safety zones, weapon requests, officer location)
+- Firebase (chat/auth-related integrations)
+- Google Maps services (map and location features)
 
-   ```bash
-   npm install
-   ```
+## Tech stack
 
-2. Start the app
+- Expo SDK 54
+- React Native 0.81
+- Expo Router (file-based routing)
+- TypeScript
+- NativeWind
+- Axios
+- Firebase
 
-   ```bash
-   npx expo start
-   ```
+## Prerequisites
 
-In the output, you'll find options to open the app in a
+Install the following before running:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Node.js 18+ (recommended: latest LTS)
+- npm 9+
+- Expo CLI (via npx, no global install required)
+- Android Studio (for Android emulator) or Xcode (for iOS simulator on macOS)
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+For API calls to work, run the backend service and make sure its URL is reachable from your device/emulator.
 
-## Get a fresh project
+## Environment configuration
 
-When you're ready, run:
+This project reads environment values from:
+
+- `.env.development`
+- `.env.preview`
+- `.env.production`
+
+The selected file depends on `APP_ENV` (default is `development`).
+
+### 1. Create your env file
+
+From this folder, copy `.env.example` to one of the environment files:
 
 ```bash
-npm run reset-project
+cp .env.example .env.development
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Fill required values
 
-## Learn more
+At minimum, set all of the following keys:
 
-To learn more about developing your project with Expo, look at the following resources:
+```env
+API_URL=
+FIREBASE_API_KEY=
+FIREBASE_AUTH_DOMAIN=
+FIREBASE_PROJECT_ID=
+FIREBASE_STORAGE_BUCKET=
+FIREBASE_MESSAGING_SENDER_ID=
+FIREBASE_APP_ID=
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Optional but recommended:
 
-## Join the community
+```env
+GOOGLE_MAPS_API_KEY=
+```
 
-Join our community of developers creating universal apps.
+### API_URL tips
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- Android emulator (calling backend on your machine):
+
+```env
+API_URL=http://10.0.2.2:8080
+```
+
+- iOS simulator:
+
+```env
+API_URL=http://localhost:8080
+```
+
+- Physical device (same Wi-Fi as your machine):
+
+```env
+API_URL=http://<YOUR_LOCAL_IP>:8080
+```
+
+## Install dependencies
+
+```bash
+npm install
+```
+
+## Run the app
+
+### Start Expo dev server
+
+Development environment (default):
+
+```bash
+npx expo start
+```
+
+Use a specific environment file:
+
+```bash
+APP_ENV=preview npx expo start
+APP_ENV=production npx expo start
+```
+
+### Run on Android
+
+```bash
+npm run android
+```
+
+### Run on iOS (macOS only)
+
+```bash
+npm run ios
+```
+
+### Run on web
+
+```bash
+npm run web
+```
+
+## Lint
+
+```bash
+npm run lint
+```
+
+## Typical local workflow
+
+1. Start backend service (default expected port: 8080).
+2. Configure `.env.development` with valid API/Firebase values.
+3. Install dependencies with `npm install`.
+4. Start Expo using `npx expo start`.
+5. Launch on emulator/device (`a` for Android, `i` for iOS in Expo terminal, or use npm scripts).
+
+## Build and deployment notes
+
+- App config values are injected through `app.config.js` into Expo `extra`.
+- If you use EAS Build, define the same env vars in your EAS environment. Missing values can cause runtime failures when reading config.
+
+## Project structure
+
+- `app/` route screens (Expo Router)
+- `src/api/` API client setup
+- `src/services/` feature service layers
+- `src/constants/` shared constants and runtime config
+- `src/components/` reusable UI and feature components
+- `src/context/` and `src/hooks/` app state and hooks
+
+## Troubleshooting
+
+- Error: Missing required app config
+  - Check `.env.*` values and confirm you started the app with the intended `APP_ENV`.
+- Network request failed
+  - Verify backend is running and `API_URL` is reachable from emulator/device.
+- Android physical device cannot reach backend
+  - Use your machine local IP address, not `localhost`.
+
+## Useful scripts
+
+- `npx expo start` - Start Expo development server
+- `npm run android` - Build/run on Android
+- `npm run ios` - Build/run on iOS
+- `npm run web` - Run web target
+- `npm run lint` - Lint project
+- `npm run reset-project` - Reset scaffolded starter structure

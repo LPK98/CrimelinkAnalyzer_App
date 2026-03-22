@@ -1,5 +1,4 @@
 name: EAS Build
-
 on:
   push:
     branches:
@@ -15,31 +14,25 @@ on:
         options:
           - preview
           - production
-
 jobs:
   build:
     name: EAS Build
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "npm"
-
       - name: Install dependencies
         run: npm ci
-
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
         with:
           eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
+          token: ${{ secrets.EXPO_ROBOT_TOKEN }}    # 👈 Changed
       - name: Set build profile and environment
         id: config
         run: |
@@ -50,9 +43,7 @@ jobs:
           else
             PROFILE=preview
           fi
-
           echo "profile=$PROFILE" >> $GITHUB_OUTPUT
-
           # Set API_URL based on profile
           if [ "$PROFILE" == "production" ]; then
             echo "API_URL=${{ secrets.PROD_API_URL }}" >> $GITHUB_ENV
@@ -61,21 +52,17 @@ jobs:
             echo "API_URL=${{ secrets.PREVIEW_API_URL }}" >> $GITHUB_ENV
             echo "APP_ENV=preview" >> $GITHUB_ENV
           fi
-
       - name: Create .env file
         run: |
           echo "API_URL=${{ env.API_URL }}" >> .env.${{ env.APP_ENV }}
           echo "APP_ENV=${{ env.APP_ENV }}" >> .env.${{ env.APP_ENV }}
-
       - name: Build on EAS
         run: eas build --platform android --profile ${{ steps.config.outputs.profile }} --non-interactive
-
       - name: Notify success
         if: success()
         run: |
           echo "✅ Build succeeded for profile: ${{ steps.config.outputs.profile }}"
           echo "🔗 Check your build at https://expo.dev"
-
       - name: Notify failure
         if: failure()
         run: |

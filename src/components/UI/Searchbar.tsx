@@ -1,7 +1,16 @@
+import { useTheme } from "@/src/theme/ThemeProvider";
 import React from "react";
 import { TextInput, View } from "react-native";
 
-const Searchbar = () => {
+type SearchbarProps = {
+  onChange: (text: string) => void;
+  value: string;
+  searchInputRef: React.RefObject<HTMLInputElement | null>;
+};
+
+const Searchbar = ({ onChange, value, searchInputRef }: SearchbarProps) => {
+  const { colors } = useTheme();
+
   return (
     <View style={{ padding: 10 }}>
       <TextInput
@@ -9,13 +18,16 @@ const Searchbar = () => {
         className="bg-white rounded-lg p-2 w-full"
         style={{
           fontSize: 16,
-          color: "black",
+          color: colors.white,
           paddingHorizontal: 12,
           borderRadius: 30,
           paddingVertical: 10,
           backgroundColor: "#11162F",
         }}
         placeholderTextColor="gray"
+        value={value}
+        onChangeText={onChange}
+        ref={searchInputRef}
       />
     </View>
   );

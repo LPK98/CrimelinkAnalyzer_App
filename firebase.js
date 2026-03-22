@@ -6,6 +6,7 @@ import {
   initializeAuth,
 } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage";
 import { firebaseConfig } from "./src/constants/appConfig";
 
 // Initialize Firebase only if no app exists
@@ -19,4 +20,5 @@ export const auth =
         persistence: getReactNativePersistence(ReactNativeAsyncStorage),
       });
 export const db = getFirestore(app);
+export const storage = getStorage(app);
 export default app;

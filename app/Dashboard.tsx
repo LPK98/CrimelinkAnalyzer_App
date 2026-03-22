@@ -1,16 +1,17 @@
 import SideBar from "@/src/components/SideBar";
 import TopBar from "@/src/components/TopBar";
-import { icons } from "@/src/constants/icons";
 import { images } from "@/src/constants/images";
 import { useAuth } from "@/src/hooks/useAuth";
+import { getAnnouncements } from "@/src/services/announcementService";
 import { useTheme } from "@/src/theme/ThemeProvider";
+import { Announcement } from "@/src/types/announcement";
+import { Ionicons } from "@expo/vector-icons";
 import { Href, router } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   ImageBackground,
   Pressable,
   StyleSheet,
@@ -21,16 +22,62 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 const SIDEBAR_WIDTH = Math.min(320, Math.floor(SCREEN_WIDTH * 0.75));
+const ANNOUNCEMENT_WIDTH = SCREEN_WIDTH - 32;
+const AUTO_SLIDE_INTERVAL_MS = 4500;
+
+type MenuItem = {
+  name: string;
+  route: Href;
+  iconName: React.ComponentProps<typeof Ionicons>["name"];
+};
 
 const Dashboard = () => {
   const { colors } = useTheme();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [activeAnnouncement, setActiveAnnouncement] = useState(0);
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [announcementsLoading, setAnnouncementsLoading] = useState(true);
+  const [announcementsError, setAnnouncementsError] = useState<string | null>(
+    null,
+  );
+  const announcementRef = useRef<FlatList<Announcement>>(null);
   const slideX = useRef(new Animated.Value(-SIDEBAR_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
 
   const openSidebar = () => setIsSidebarOpen(true);
   const closeSidebar = () => setIsSidebarOpen(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchAnnouncements = async () => {
+      setAnnouncementsLoading(true);
+      setAnnouncementsError(null);
+
+      try {
+        const data = await getAnnouncements();
+        if (isMounted) {
+          setAnnouncements(data);
+        }
+      } catch (error) {
+        console.error("Error fetching announcements:", error);
+        if (isMounted) {
+          setAnnouncementsError("Unable to load announcements at the moment.");
+        }
+      } finally {
+        if (isMounted) {
+          setAnnouncementsLoading(false);
+        }
+      }
+    };
+
+    fetchAnnouncements();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
@@ -47,7 +94,24 @@ const Dashboard = () => {
     ]).start();
   }, [isSidebarOpen, overlayOpacity, slideX]);
 
-  const menuItems: { name: string; route: Href; icon: any }[] = [
+  useEffect(() => {
+    if (announcements.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setActiveAnnouncement((prev) => {
+        const nextIndex = (prev + 1) % announcements.length;
+        announcementRef.current?.scrollToIndex({
+          index: nextIndex,
+          animated: true,
+        });
+        return nextIndex;
+      });
+    }, AUTO_SLIDE_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [announcements.length]);
+
+  const menuItems: MenuItem[] = [
     // {
     //   name: "Face Recognition",
     //   route: "/(screens)/FaceDetection",
@@ -56,96 +120,208 @@ const Dashboard = () => {
     {
       name: "Weapon Management",
       route: "/(screens)/Weapon",
-      icon: icons.weapon,
+      iconName: "shield-checkmark-outline",
     },
     {
-      name: "Number Plates Lookup",
+      name: "Plates Lookup",
       route: "/(screens)/Plate",
-      icon: icons.numberPlate,
+      iconName: "car-sport-outline",
     },
-    { name: "Duty Management", route: "/(screens)/Duty", icon: icons.duty },
+    {
+      name: "Duty Management",
+      route: "/(screens)/Duty",
+      iconName: "clipboard-outline",
+    },
     {
       name: "Safety Zone",
       route: "/(screens)/SafetyZone",
-      icon: icons.safetyZone,
+      iconName: "location-outline",
     },
-    { name: "Schedule", route: "/Dashboard", icon: icons.schedule },
-    { name: "Messages", route: "/Chat", icon: icons.message },
+    { name: "Settings", route: "/Settings", iconName: "settings-outline" },
+    {
+      name: "Messages",
+      route: "/Chat",
+      iconName: "chatbubble-ellipses-outline",
+    },
   ];
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={styles.safeArea}>
       <ImageBackground
-        style={{ flex: 1 }}
+        style={styles.bg}
         source={images.bgApp}
-        // className="w-full h-full"
-        imageStyle={{ opacity: 0.1 }}
+        imageStyle={{ opacity: 1 }}
         resizeMode="cover"
       >
         <View
-          style={{
-            backgroundColor: colors.background,
-            width: "100%",
-            height: "100%",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            paddingHorizontal: 16,
-            paddingVertical: 8,
-          }}
+          style={[
+            styles.container,
+            {
+              backgroundColor: colors.overlay,
+            },
+          ]}
         >
-          <View
-            style={{
-              flex: 1,
-              alignItems: "center",
-              paddingHorizontal: 20,
-              width: "100%",
-            }}
-          >
+          <View style={styles.header}>
             <TopBar
               openSidebar={openSidebar}
               closeSidebar={closeSidebar}
               name={user?.name}
             />
-            <Pressable //REMOVE
-              onPress={logout}
-              style={{
-                marginTop: 24,
-                backgroundColor: colors.danger,
-                borderRadius: 12,
-                paddingVertical: 12,
-                paddingHorizontal: 24,
-                alignItems: "center",
+          </View>
+
+          <View style={styles.announcementSection}>
+            <Text style={[styles.sectionTitle, { color: colors.white }]}>
+              Important Announcements
+            </Text>
+            <FlatList
+              ref={announcementRef}
+              data={announcements}
+              horizontal
+              pagingEnabled
+              bounces={false}
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item) => item.id}
+              snapToInterval={ANNOUNCEMENT_WIDTH}
+              decelerationRate="fast"
+              getItemLayout={(_, index) => ({
+                length: ANNOUNCEMENT_WIDTH,
+                offset: ANNOUNCEMENT_WIDTH * index,
+                index,
+              })}
+              onScrollToIndexFailed={({ index }) => {
+                setTimeout(() => {
+                  announcementRef.current?.scrollToIndex({
+                    index,
+                    animated: true,
+                  });
+                }, 120);
               }}
-            >
-              <Text
-                style={{ color: colors.white, fontSize: 16, fontWeight: "600" }}
+              onMomentumScrollEnd={(event) => {
+                const nextIndex = Math.round(
+                  event.nativeEvent.contentOffset.x / ANNOUNCEMENT_WIDTH,
+                );
+                setActiveAnnouncement(nextIndex);
+              }}
+              renderItem={({ item }) => (
+                <View
+                  style={[
+                    styles.announcementCard,
+                    {
+                      backgroundColor: colors.card,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.tag,
+                      {
+                        backgroundColor: colors.primaryAccent,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.tagText, { color: colors.black }]}>
+                      {item.tag}
+                    </Text>
+                  </View>
+                  <Text
+                    style={[styles.announcementTitle, { color: colors.text }]}
+                  >
+                    {item.title}
+                  </Text>
+                  <Text
+                    style={[styles.announcementMessage, { color: colors.text }]}
+                  >
+                    {item.message}
+                  </Text>
+                </View>
+              )}
+            />
+
+            {announcementsLoading ? (
+              <View
+                style={[
+                  styles.emptyAnnouncementCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
               >
-                Logout
-              </Text>
-            </Pressable>
+                <Text
+                  style={[styles.emptyAnnouncementText, { color: colors.text }]}
+                >
+                  Loading announcements...
+                </Text>
+              </View>
+            ) : null}
+
+            {announcementsError ? (
+              <View
+                style={[
+                  styles.emptyAnnouncementCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.emptyAnnouncementText, { color: colors.text }]}
+                >
+                  {announcementsError}
+                </Text>
+              </View>
+            ) : null}
+
+            {!announcementsLoading &&
+            !announcementsError &&
+            announcements.length === 0 ? (
+              <View
+                style={[
+                  styles.emptyAnnouncementCard,
+                  {
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Text
+                  style={[styles.emptyAnnouncementText, { color: colors.text }]}
+                >
+                  No announcements available right now.
+                </Text>
+              </View>
+            ) : null}
+
+            <View style={styles.dotContainer}>
+              {announcements.map((item, index) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor:
+                        index === activeAnnouncement
+                          ? colors.white
+                          : "rgba(255,255,255,0.45)",
+                    },
+                  ]}
+                />
+              ))}
+            </View>
           </View>
 
           {/* Menu buttons */}
           <View
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              paddingHorizontal: 16,
-              backgroundColor: colors.card,
-              paddingTop: 20,
-              borderTopLeftRadius: 38,
-              borderTopRightRadius: 38,
-              borderTopWidth: 0.5,
-              borderColor: colors.border,
-              elevation: 12,
-              shadowColor: colors.secondary,
-              shadowOffset: { width: 0, height: -3 },
-              shadowOpacity: 0.8,
-              shadowRadius: 8,
-            }}
+            style={[
+              styles.menuPanel,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                shadowColor: colors.secondary,
+              },
+            ]}
           >
             <FlatList
               data={menuItems}
@@ -153,11 +329,12 @@ const Dashboard = () => {
               keyExtractor={(item) => item.name}
               contentContainerStyle={styles.menuListContent}
               columnWrapperStyle={styles.menuRow}
+              scrollEnabled={false}
               renderItem={({ item, index }) => (
                 <Pressable
                   key={index}
                   style={styles.menuButton}
-                  onPress={() => router.replace(item.route)}
+                  onPress={() => router.push(item.route)}
                 >
                   <View
                     style={[
@@ -168,10 +345,10 @@ const Dashboard = () => {
                       },
                     ]}
                   >
-                    <Image
-                      style={styles.menuIcon}
-                      source={item.icon}
-                      resizeMode="contain"
+                    <Ionicons
+                      name={item.iconName}
+                      size={30}
+                      color={colors.primary}
                     />
                   </View>
                   <Text style={[styles.menuText, { color: colors.text }]}>
@@ -222,9 +399,99 @@ const Dashboard = () => {
 };
 
 const styles = StyleSheet.create({
-  menuContainer: {},
+  safeArea: {
+    flex: 1,
+  },
+  bg: {
+    flex: 1,
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 0,
+  },
+  header: {
+    width: "100%",
+    paddingHorizontal: 4,
+  },
+  announcementSection: {
+    marginTop: 30,
+    width: "100%",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  announcementCard: {
+    width: ANNOUNCEMENT_WIDTH,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 150,
+    justifyContent: "center",
+  },
+  emptyAnnouncementCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  emptyAnnouncementText: {
+    fontSize: 14,
+    textAlign: "center",
+    opacity: 0.85,
+  },
+  tag: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  tagText: {
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  announcementTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  announcementMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.9,
+  },
+  dotContainer: {
+    marginTop: 10,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 6,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  menuPanel: {
+    marginTop: "auto",
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    borderTopLeftRadius: 38,
+    borderTopRightRadius: 38,
+    borderTopWidth: 0.5,
+    elevation: 12,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
+  },
   menuListContent: {
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   menuRow: {
     justifyContent: "space-between",
@@ -233,7 +500,7 @@ const styles = StyleSheet.create({
   },
   menuButton: {
     flex: 1,
-    minHeight: 116,
+    minHeight: 108,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 6,
@@ -251,10 +518,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.18,
     shadowRadius: 4,
-  },
-  menuIcon: {
-    width: 40,
-    height: 40,
   },
   menuText: {
     textAlign: "center",

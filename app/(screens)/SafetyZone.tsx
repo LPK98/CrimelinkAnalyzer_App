@@ -1,13 +1,30 @@
-import TopSectionTemplate from "@/src/components/TopSectionTemplate";
 import OverlayButton from "@/src/components/UI/OverlayButton";
 import Searchbar from "@/src/components/UI/Searchbar";
+import { appConfig } from "@/src/constants/appConfig";
+import { images } from "@/src/constants/images";
 import { getCrimeLocations } from "@/src/services/safetyzoneService";
+import { useTheme } from "@/src/theme/ThemeProvider";
 import { CrimeLocationType } from "@/src/types/SafetyzoneTypes";
+import { getCrimeColor } from "@/src/utils/utils";
+import { Ionicons } from "@expo/vector-icons";
 import * as Location from "expo-location";
+import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Dimensions, Text, View } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  ActivityIndicator,
+  Dimensions,
+  ImageBackground,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from "react-native";
+import MapView, { Circle, PROVIDER_GOOGLE, Region } from "react-native-maps";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 
 const SRI_LANKA_BOUNDS = {
   northEast: {
@@ -20,18 +37,62 @@ const SRI_LANKA_BOUNDS = {
   },
 };
 
+const { width: BASE_SCREEN_WIDTH, height: BASE_SCREEN_HEIGHT } =
+  Dimensions.get("window");
+const BASE_ASPECT_RATIO = BASE_SCREEN_WIDTH / BASE_SCREEN_HEIGHT;
+const LATITUDE_DELTA = 0.05;
+const LONGITUDE_DELTA = LATITUDE_DELTA * BASE_ASPECT_RATIO;
+
+const LEGEND_ITEMS = [
+  {
+    id: "safe",
+    label: "Safe Zone",
+    chipBg: "#103735",
+    chipBorder: "#0F5849",
+    chipText: "#2EBD8B",
+  },
+  {
+    id: "caution",
+    label: "Caution",
+    chipBg: "#373310",
+    chipBorder: "#EAB308",
+    chipText: "#EAB308",
+  },
+  {
+    id: "risk",
+    label: "High Risk",
+    chipBg: "#3F1F1F",
+    chipBorder: "#641D1D",
+    chipText: "#FB3C3C",
+  },
+  {
+    id: "nodata",
+    label: "No Data",
+    chipBg: "#212937",
+    chipBorder: "#323D4E",
+    chipText: "#93A2B7",
+  },
+] as const;
+
 const SafetyZone = () => {
-  const { width, height } = Dimensions.get("window");
-  const ASPECT_RATIO = width / height;
-  const LATITUDE_DELTA = 0.05;
-  const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
+  const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const isCompact = windowWidth < 390;
+  const mapHeight = Math.max(
+    260,
+    Math.min(windowHeight * (isCompact ? 0.38 : 0.44), 420),
+  );
 
   const isAnimatingRef = React.useRef(false);
   const mapRef = React.useRef<MapView>(null);
   const fullMapRef = React.useRef<MapView>(null);
   const [region, setRegion] = useState<Region | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [crimeLocations, setCrimeLocations] = useState<CrimeLocationType[]>([]);
+  const hasGoogleMapsApiKey = Boolean(appConfig.googleMapsApiKey?.trim());
+  const searchInputRef = React.useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     const loadLocation = async () => {
@@ -57,6 +118,12 @@ const SafetyZone = () => {
     loadLocation();
     fetchLocations();
   }, []);
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    console.log("Search query:", text); //REMOVE
+    // IMPLEMENT: Add autocomplete and searching function
+  };
 
   const fetchLocations = async () => {
     try {
@@ -94,13 +161,13 @@ const SafetyZone = () => {
 
     const zoomFactor = direction === "in" ? 0.5 : 2;
 
-    const newRegin: Region = {
+    const newRegion: Region = {
       ...region,
       latitudeDelta: region.latitudeDelta * zoomFactor,
       longitudeDelta: region.longitudeDelta * zoomFactor,
     };
 
-    animateTo(newRegin, 250);
+    animateTo(newRegion, 250);
   };
 
   const myLocation = async () => {
@@ -129,193 +196,206 @@ const SafetyZone = () => {
     );
   }; //FIX
 
-  if (!region) {
-    return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size={"large"} />
-      </View>
-    );
-  }
-
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <TopSectionTemplate subHeading="Safety Zone Mapping">
-        <Searchbar />
-        {/* REMOVE */}
-        {/* <Button
-          onPress={() => {
-            router.replace("/Dashboard");
-          }}
-        >
-          Back
-        </Button>
-        <Button onPress={fetchLocations}>test</Button> */}
-        {/* REMOVE */}
+    <SafeAreaView style={styles.safeArea}>
+      <ImageBackground
+        style={styles.background}
+        source={images.bgApp}
+        imageStyle={styles.backgroundImage}
+        resizeMode="cover"
+      >
         <View
-          style={{
-            flex: 1,
-            // height: Dimensions.get("window").height * 0.5, //REMOVE : this or flex:1
-            width: "100%",
-          }}
+          style={[
+            styles.container,
+            {
+              backgroundColor: colors.overlay,
+            },
+          ]}
         >
-          <Text
-            style={{
-              fontSize: 20,
-              color: "white",
-              fontWeight: "bold",
-              elevation: 11,
-            }}
-          >
-            Safety Zone Map
-          </Text>
           <View
-            style={{
-              flex: 1,
-              margin: isFullScreen ? 0 : 10,
-              borderRadius: isFullScreen ? 0 : 20,
-              overflow: "hidden",
-            }}
+            style={[
+              styles.headerCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
           >
-            <MapView
-              ref={mapRef}
-              style={{ flex: 1, height: "100%", width: "100%" }}
-              provider="google"
-              region={region}
-              onMapReady={() => onMapReady(mapRef)}
-              onRegionChangeComplete={(region) => {
-                if (isAnimatingRef.current) return;
-                setRegion(region);
-              }}
-              showsUserLocation={true}
-              showsMyLocationButton={false}
-              minZoomLevel={6}
-              maxZoomLevel={18}
-              // initialRegion={{
-              //   latitude: 5.948202,
-              //   longitude: 80.548086,
-              //   latitudeDelta: LATITUDE_DELTA,
-              //   longitudeDelta: LONGITUDE_DELTA,
-              // }} //REMOVE
+            <Pressable
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.push("/Dashboard")
+              }
+              style={styles.backButton}
             >
-              {crimeLocations.map((loc, index) => (
-                <Marker
-                  key={loc.id ?? `${loc.latitude}-${loc.longitude}-${index}`}
-                  coordinate={{
-                    latitude: loc.latitude,
-                    longitude: loc.longitude,
-                  }}
-                  title={loc.crimeType}
-                />
-              ))}
-            </MapView>
-            {/* Overlay buttons */}
+              <Ionicons name="chevron-back" size={22} color={colors.primary} />
+            </Pressable>
+            <View style={styles.headerTextWrap}>
+              <Text style={[styles.headerTitle, { color: colors.text }]}>
+                Safety Zone
+              </Text>
+              <Text style={[styles.headerSubtitle, { color: colors.text }]}>
+                Real-time mapping and incident hotspots
+              </Text>
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.searchCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Searchbar
+              value={searchQuery}
+              onChange={(text) => handleSearchChange(text)}
+              searchInputRef={searchInputRef}
+            />
+            <Pressable
+              // onPress={handleSearchPress}
+              // disabled={
+              //   isSearching || !searchQuery.trim() || !hasGoogleMapsApiKey
+              // }
+              style={[styles.searchButton, { backgroundColor: colors.primary }]}
+            >
+              <Ionicons name="search" size={18} color={colors.white} />
+              <Text style={[styles.searchButtonText, { color: colors.white }]}>
+                {/* {isSearching ? "Searching..." : "Search"} */}Search
+              </Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.mapSection}>
+            <Text style={[styles.sectionTitle, { color: colors.white }]}>
+              Safety Zone Map
+            </Text>
             <View
-              style={{
-                position: "absolute",
-                top: 10,
-                right: 10,
-                gap: 10,
-                zIndex: 999,
-                elevation: 999,
-              }}
-              pointerEvents="box-none"
+              style={[
+                styles.mapCard,
+                {
+                  height: mapHeight,
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
             >
-              <OverlayButton
-                icon="fullscreen"
-                iconColor="#ffffff"
-                size={24}
-                onPress={() => setIsFullScreen((v) => !v)}
-              />
-              <OverlayButton icon="add" size={24} onPress={() => zoom("in")} />
-              <OverlayButton
-                icon="remove"
-                size={24}
-                onPress={() => zoom("out")}
-              />
-              <OverlayButton
-                icon="my-location"
-                size={24}
-                onPress={myLocation}
-              />
+              {hasGoogleMapsApiKey && region ? (
+                <>
+                  <MapView
+                    ref={mapRef}
+                    style={styles.map}
+                    provider={PROVIDER_GOOGLE}
+                    region={region}
+                    onMapReady={() => onMapReady(mapRef)}
+                    onRegionChangeComplete={(nextRegion) => {
+                      if (isAnimatingRef.current) return;
+                      setRegion(nextRegion);
+                    }}
+                    showsUserLocation={true}
+                    showsMyLocationButton={false}
+                    minZoomLevel={6}
+                    maxZoomLevel={18}
+                  >
+                    {crimeLocations.map((loc, index) => (
+                      <Circle
+                        key={`${loc.latitude}-${loc.longitude}-${index}`}
+                        center={{
+                          latitude: loc.latitude,
+                          longitude: loc.longitude,
+                        }}
+                        radius={200}
+                        fillColor={getCrimeColor(loc.crimeType).concat("50")}
+                        strokeColor={getCrimeColor(loc.crimeType)}
+                        strokeWidth={1}
+                        // title={loc.crimeType}  //REMOVE
+                      />
+                    ))}
+                  </MapView>
+
+                  <View style={styles.mapActions} pointerEvents="box-none">
+                    <OverlayButton
+                      icon="fullscreen"
+                      iconColor="#ffffff"
+                      size={24}
+                      onPress={() => setIsFullScreen((v) => !v)}
+                    />
+                    <OverlayButton
+                      icon="add"
+                      size={24}
+                      onPress={() => zoom("in")}
+                    />
+                    <OverlayButton
+                      icon="remove"
+                      size={24}
+                      onPress={() => zoom("out")}
+                    />
+                    <OverlayButton
+                      icon="my-location"
+                      size={24}
+                      onPress={myLocation}
+                    />
+                  </View>
+                </>
+              ) : (
+                <View style={styles.mapUnavailable}>
+                  <Text
+                    style={[styles.mapUnavailableText, { color: colors.text }]}
+                  >
+                    Map is loading. Please wait...
+                  </Text>
+                  <ActivityIndicator size={"large"} color={colors.primary} />
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.legendPanel,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                shadowColor: colors.secondary,
+              },
+            ]}
+          >
+            <View style={styles.legendRow}>
+              {LEGEND_ITEMS.map((item) => (
+                <View
+                  key={item.id}
+                  style={[
+                    styles.legendChip,
+                    {
+                      width: isCompact ? "47%" : undefined,
+                      backgroundColor: item.chipBg,
+                      borderColor: item.chipBorder,
+                    },
+                  ]}
+                >
+                  <Text style={[styles.legendText, { color: item.chipText }]}>
+                    {item.label}
+                  </Text>
+                </View>
+              ))}
             </View>
           </View>
         </View>
-        {/* Legend cards */}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-around",
-            marginTop: 10,
-          }}
-        >
-          <View
-            style={{
-              borderRadius: 50,
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              backgroundColor: "#103735",
-              borderColor: "#0F5849",
-              borderWidth: 3,
-            }}
-          >
-            <Text style={{ color: "#2EBD8B", fontWeight: 600 }}>Safe Zone</Text>
-          </View>
-          <View
-            style={{
-              borderRadius: 50,
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              backgroundColor: "#373310",
-              borderColor: "#EAB308",
-              borderWidth: 3,
-            }}
-          >
-            <Text style={{ color: "#EAB308", fontWeight: 600 }}>Caution</Text>
-          </View>
-          <View
-            style={{
-              borderRadius: 50,
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              backgroundColor: "#3F1F1F",
-              borderColor: "#641D1D",
-              borderWidth: 3,
-            }}
-          >
-            <Text style={{ color: "#FB3C3C", fontWeight: 600 }}>High Risk</Text>
-          </View>
-          <View
-            style={{
-              borderRadius: 50,
-              paddingHorizontal: 10,
-              paddingVertical: 6,
-              backgroundColor: "#212937",
-              borderColor: "#323D4E",
-              borderWidth: 3,
-            }}
-          >
-            <Text style={{ color: "#93A2B7", fontWeight: 600 }}>No data</Text>
-          </View>
-        </View>
-      </TopSectionTemplate>
+      </ImageBackground>
 
-      {isFullScreen && (
+      {isFullScreen && hasGoogleMapsApiKey && (
         <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 9999,
-            elevation: 9999,
-            backgroundColor: "#0B0C1A",
-          }}
+          style={[
+            styles.fullScreenOverlay,
+            { backgroundColor: colors.background },
+          ]}
           pointerEvents="auto"
         >
           <MapView
+            ref={fullMapRef}
             style={{ flex: 1 }}
-            provider="google"
+            provider={PROVIDER_GOOGLE}
             region={region}
             onMapReady={() => onMapReady(fullMapRef)}
             onRegionChangeComplete={(r) => {
@@ -325,13 +405,17 @@ const SafetyZone = () => {
             showsMyLocationButton={false}
           >
             {crimeLocations.map((loc, index) => (
-              <Marker
-                key={loc.id ?? `${loc.latitude}-${loc.longitude}-${index}`}
-                coordinate={{
+              <Circle
+                key={`${loc.latitude}-${loc.longitude}-${index}`}
+                center={{
                   latitude: loc.latitude,
                   longitude: loc.longitude,
                 }}
-                title={loc.crimeType}
+                radius={200}
+                fillColor={getCrimeColor(loc.crimeType).concat("50")}
+                strokeColor={getCrimeColor(loc.crimeType)}
+                strokeWidth={1}
+                // title={loc.crimeType}  //REMOVE
               />
             ))}
           </MapView>
@@ -339,7 +423,7 @@ const SafetyZone = () => {
           <View
             style={{
               position: "absolute",
-              top: 16,
+              top: insets.top + 12,
               right: 16,
               zIndex: 10000,
               elevation: 10000,
@@ -365,4 +449,151 @@ const SafetyZone = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  background: {
+    flex: 1,
+  },
+  backgroundImage: {
+    opacity: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  container: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 14,
+    gap: 12,
+  },
+  headerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTextWrap: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  headerSubtitle: {
+    marginTop: 2,
+    fontSize: 13,
+    fontWeight: "500",
+    opacity: 0.8,
+  },
+  searchCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+  },
+  searchButton: {
+    position: "absolute",
+    right: 14,
+    top: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+  },
+  searchButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  mapSection: {
+    flex: 1,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  mapCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    overflow: "hidden",
+  },
+  map: {
+    flex: 1,
+    width: "100%",
+  },
+  mapUnavailable: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
+    paddingHorizontal: 20,
+  },
+  mapUnavailableText: {
+    fontSize: 14,
+    fontWeight: "600",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  mapActions: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    gap: 10,
+    zIndex: 999,
+    elevation: 999,
+  },
+  legendPanel: {
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 18,
+    borderWidth: 1,
+    elevation: 12,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+  },
+  legendRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  legendChip: {
+    borderRadius: 999,
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderWidth: 2,
+    alignItems: "center",
+  },
+  legendText: {
+    fontWeight: "700",
+    fontSize: 12,
+  },
+  fullScreenOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+});
+
 export default SafetyZone;

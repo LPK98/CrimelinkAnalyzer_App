@@ -1,18 +1,25 @@
+import { images } from "@/src/constants/images";
+import { useTheme } from "@/src/theme/ThemeProvider";
+import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { Bell, Clock, MapPin, X } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  ImageBackground,
   Modal,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { Calendar, Calendar as RNCalendar } from "react-native-calendars";
-
+import { SafeAreaView } from "react-native-safe-area-context";
 import { getUser } from "../../src/auth/auth";
 import {
   getOfficerDuties,
@@ -21,9 +28,6 @@ import {
 import * as leaveService from "../../src/services/leaveService";
 import type { DutyAssignment, DutyDetail } from "../../src/types/duty";
 import type { LeaveRequest } from "../../src/types/leave";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { router } from "expo-router";
-import Ionicons from "@expo/vector-icons/build/Ionicons";
 
 type MarkedDates = Record<
   string,
@@ -37,15 +41,21 @@ type MarkedDates = Record<
 >;
 
 type Props = {
-  navigation: any;
-  route: any;
+  route?: {
+    params?: {
+      officerId?: string | number;
+    };
+  };
 };
 
-export default function DutyCalendarScreen({ navigation, route }: Props) {
+export default function DutyCalendarScreen({ route }: Props) {
+  const { colors } = useTheme();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 390;
+
   const [officerId, setOfficerId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [markedDates, setMarkedDates] = useState<MarkedDates>({});
-  const [duties, setDuties] = useState<DutyAssignment[]>([]);
   const [dutyDetails, setDutyDetails] = useState<DutyDetail[]>([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -59,53 +69,98 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
   const [leaveReason, setLeaveReason] = useState<string>("");
   const [submittingLeave, setSubmittingLeave] = useState(false);
 
-  const normalizeDutyStatus = (status?: string) => {
+  const normalizeDutyStatus = useCallback((status?: string) => {
     if (!status) return "Pending";
-    const s = String(status).toUpperCase();
-    if (s === "ACTIVE" || s === "ASSIGNED") return "Assigned";
-    if (s === "COMPLETED") return "Completed";
-    if (s === "PENDING") return "Pending";
-    if (s === "ABSENT") return "Absent";
+    const normalized = String(status).toUpperCase();
+    if (normalized === "ACTIVE" || normalized === "ASSIGNED") return "Assigned";
+    if (normalized === "COMPLETED") return "Completed";
+    if (normalized === "PENDING") return "Pending";
+    if (normalized === "ABSENT") return "Absent";
     return status;
-  };
+  }, []);
 
-  const getDutyDotColor = (status?: string) => {
-    const s = normalizeDutyStatus(status);
-    switch (s) {
+  const getDutyDotColor = useCallback(
+    (status?: string) => {
+      const normalized = normalizeDutyStatus(status);
+      switch (normalized) {
+        case "Assigned":
+          return colors.primary;
+        case "Completed":
+          return "#10B981";
+        case "Pending":
+          return colors.accent;
+        case "Absent":
+          return colors.danger;
+        default:
+          return colors.sidebarItemMutedText;
+      }
+    },
+    [
+      colors.accent,
+      colors.danger,
+      colors.primary,
+      colors.sidebarItemMutedText,
+      normalizeDutyStatus,
+    ],
+  );
+
+  const getDutyBadgePalette = (status?: string) => {
+    const normalized = normalizeDutyStatus(status);
+    switch (normalized) {
       case "Assigned":
-        return "#3B82F6";
+        return {
+          bg: "rgba(59, 130, 246, 0.2)",
+          text: "#2563EB",
+          border: "rgba(37, 99, 235, 0.45)",
+        };
       case "Completed":
-        return "#10B981";
+        return {
+          bg: "rgba(16, 185, 129, 0.2)",
+          text: "#059669",
+          border: "rgba(5, 150, 105, 0.45)",
+        };
       case "Pending":
-        return "#F59E0B";
+        return {
+          bg: "rgba(245, 158, 11, 0.2)",
+          text: "#D97706",
+          border: "rgba(217, 119, 6, 0.45)",
+        };
       case "Absent":
-        return "#EF4444";
+        return {
+          bg: "rgba(239, 68, 68, 0.2)",
+          text: "#DC2626",
+          border: "rgba(220, 38, 38, 0.45)",
+        };
       default:
-        return "#6B7280";
+        return {
+          bg: "rgba(107, 114, 128, 0.2)",
+          text: colors.sidebarItemMutedText,
+          border: "rgba(107, 114, 128, 0.45)",
+        };
     }
   };
 
-  const dutyBadgeClass = (status?: string) => {
-    const s = normalizeDutyStatus(status);
-    switch (s) {
-      case "Assigned":
-        return "bg-blue-500";
-      case "Completed":
-        return "bg-emerald-500";
-      case "Pending":
-        return "bg-amber-500";
-      case "Absent":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
+  const getLeaveBadgePalette = (status?: string) => {
+    const normalized = String(status || "PENDING").toUpperCase();
+    if (normalized === "APPROVED") {
+      return {
+        bg: "rgba(16, 185, 129, 0.2)",
+        text: "#059669",
+        border: "rgba(5, 150, 105, 0.45)",
+      };
     }
-  };
-
-  const leaveBadgeClass = (status?: string) => {
-    const s = String(status || "PENDING").toUpperCase();
-    if (s === "APPROVED") return "bg-emerald-600";
-    if (s === "DENIED") return "bg-red-600";
-    return "bg-amber-600"; // PENDING
+    if (normalized === "DENIED") {
+      return {
+        bg: "rgba(239, 68, 68, 0.2)",
+        text: "#DC2626",
+        border: "rgba(220, 38, 38, 0.45)",
+      };
+    }
+    return {
+      bg: "rgba(245, 158, 11, 0.2)",
+      text: "#D97706",
+      border: "rgba(217, 119, 6, 0.45)",
+    };
   };
 
   const todayKey = useMemo(() => new Date().toISOString().split("T")[0], []);
@@ -136,65 +191,50 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     };
   }, [route?.params?.officerId]);
 
-  useEffect(() => {
-    if (!officerId) return;
-    loadMonthDuties();
-    loadMyLeaves();
-  }, [officerId]);
+  const buildMarkedDates = useCallback(
+    (data: DutyAssignment[], keepSelectedDate?: string) => {
+      const marked: MarkedDates = {};
 
-  useEffect(() => {
-    if (!officerId || !selectedDate) return;
-    loadDutyDetails(selectedDate);
-  }, [selectedDate, officerId]);
+      for (const duty of data) {
+        const dateKey = duty.date;
+        if (!dateKey) continue;
 
-  //  ONLY duty dots
-  const buildMarkedDates = (
-    data: DutyAssignment[],
-    keepSelectedDate?: string,
-  ) => {
-    const marked: MarkedDates = {};
+        const dot = {
+          key: `duty-${String(duty.id)}`,
+          color: getDutyDotColor(duty.status),
+        };
 
-    for (const d of data) {
-      const dateKey = d.date;
-      if (!dateKey) continue;
+        if (!marked[dateKey]) marked[dateKey] = { marked: true, dots: [dot] };
+        else {
+          marked[dateKey] = {
+            ...marked[dateKey],
+            marked: true,
+            dots: [...(marked[dateKey].dots ?? []), dot],
+          };
+        }
+      }
 
-      const dot = {
-        key: `duty-${String(d.id)}`,
-        color: getDutyDotColor(d.status),
-      };
-
-      if (!marked[dateKey]) marked[dateKey] = { marked: true, dots: [dot] };
-      else {
-        marked[dateKey] = {
-          ...marked[dateKey],
-          marked: true,
-          dots: [...(marked[dateKey].dots ?? []), dot],
+      if (keepSelectedDate) {
+        marked[keepSelectedDate] = {
+          ...(marked[keepSelectedDate] ?? {}),
+          selected: true,
+          selectedColor: colors.menuSurface,
         };
       }
-    }
 
-    if (keepSelectedDate) {
-      marked[keepSelectedDate] = {
-        ...(marked[keepSelectedDate] ?? {}),
-        selected: true,
-        selectedColor: "#1E293B",
-      };
-    }
+      return marked;
+    },
+    [colors.menuSurface, getDutyDotColor],
+  );
 
-    return marked;
-  };
-
-  const loadMonthDuties = async () => {
+  const loadMonthDuties = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
       const data = await getOfficerDuties(officerId);
-      setDuties(data);
-
       const dateToSelect = selectedDate || todayKey;
 
-      //  build calendar marks only from duties
       setMarkedDates(buildMarkedDates(data, dateToSelect));
 
       if (!selectedDate) setSelectedDate(dateToSelect);
@@ -208,30 +248,36 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [buildMarkedDates, officerId, selectedDate, todayKey]);
 
-  const loadDutyDetails = async (date: string) => {
-    try {
-      setLoading(true);
-      setError(null);
+  const loadDutyDetails = useCallback(
+    async (date: string) => {
+      try {
+        setLoading(true);
+        setError(null);
 
-      const details = await getOfficerDutiesByDate(officerId, date);
-      setDutyDetails(
-        details.map((d) => ({ ...d, status: normalizeDutyStatus(d.status) })),
-      );
-    } catch (e: any) {
-      const msg =
-        e?.response?.status === 403
-          ? "Access denied. Check backend auth / CORS."
-          : "Failed to load duty details.";
-      setError(msg);
-      setDutyDetails([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        const details = await getOfficerDutiesByDate(officerId, date);
+        setDutyDetails(
+          details.map((duty) => ({
+            ...duty,
+            status: normalizeDutyStatus(duty.status),
+          })),
+        );
+      } catch (e: any) {
+        const msg =
+          e?.response?.status === 403
+            ? "Access denied. Check backend auth / CORS."
+            : "Failed to load duty details.";
+        setError(msg);
+        setDutyDetails([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [normalizeDutyStatus, officerId],
+  );
 
-  const loadMyLeaves = async () => {
+  const loadMyLeaves = useCallback(async () => {
     try {
       setLoadingLeaves(true);
       const data = await leaveService.getOfficerLeaves(String(officerId));
@@ -241,24 +287,38 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     } finally {
       setLoadingLeaves(false);
     }
-  };
+  }, [officerId]);
+
+  useEffect(() => {
+    if (!officerId) return;
+    void loadMonthDuties();
+    void loadMyLeaves();
+  }, [loadMonthDuties, loadMyLeaves, officerId]);
+
+  useEffect(() => {
+    if (!officerId || !selectedDate) return;
+    void loadDutyDetails(selectedDate);
+  }, [loadDutyDetails, officerId, selectedDate]);
 
   const onDayPress = (day: { dateString: string }) => {
     const date = day.dateString;
     setSelectedDate(date);
 
-    const newMarked: MarkedDates = { ...markedDates };
-    Object.keys(newMarked).forEach((k) => {
-      newMarked[k] = { ...(newMarked[k] ?? {}), selected: false };
+    setMarkedDates((prev) => {
+      const nextMarked: MarkedDates = { ...prev };
+
+      Object.keys(nextMarked).forEach((key) => {
+        nextMarked[key] = { ...(nextMarked[key] ?? {}), selected: false };
+      });
+
+      nextMarked[date] = {
+        ...(nextMarked[date] ?? {}),
+        selected: true,
+        selectedColor: colors.menuSurface,
+      };
+
+      return nextMarked;
     });
-
-    newMarked[date] = {
-      ...(newMarked[date] ?? {}),
-      selected: true,
-      selectedColor: "#1E293B",
-    };
-
-    setMarkedDates(newMarked);
   };
 
   const formatDate = (dateString: string) =>
@@ -289,7 +349,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
       return;
     }
 
-    // Check if date is in the past
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const selectedDateObj = new Date(leaveSelectedDate);
@@ -312,7 +371,6 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
       setLeaveSelectedDate("");
       setLeaveReason("");
 
-      // Reload duties and leave list (calendar remains duty dots only)
       await loadMonthDuties();
       await loadMyLeaves();
     } catch (e: any) {
@@ -326,253 +384,500 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
 
   if (initialLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-900">
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text className="mt-4 text-white">Loading duties...</Text>
-        </View>
+      <SafeAreaView style={styles.safeArea}>
+        <ImageBackground
+          source={images.bgApp}
+          style={styles.bg}
+          resizeMode="cover"
+        >
+          <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+            <View
+              style={[
+                styles.centerCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <ActivityIndicator size="large" color={colors.primary} />
+              <Text style={[styles.centerText, { color: colors.text }]}>
+                Loading duties...
+              </Text>
+            </View>
+          </View>
+        </ImageBackground>
       </SafeAreaView>
     );
   }
 
   if (!officerId) {
     return (
-      <SafeAreaView className="flex-1 bg-slate-900">
-        <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-center text-base text-red-500">
-            Officer ID not found. Login again or pass officerId in navigation
-            params.
-          </Text>
-        </View>
+      <SafeAreaView style={styles.safeArea}>
+        <ImageBackground
+          source={images.bgApp}
+          style={styles.bg}
+          resizeMode="cover"
+        >
+          <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+            <View
+              style={[
+                styles.centerCard,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              <Text
+                style={[styles.missingOfficerText, { color: colors.danger }]}
+              >
+                Officer ID not found. Login again or pass officerId in
+                navigation params.
+              </Text>
+            </View>
+          </View>
+        </ImageBackground>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-slate-900">
-      <View className="flex-row items-center justify-between border-b border-slate-800 bg-slate-900 px-4 py-3">
-        <Pressable onPress={() => router.replace("/Dashboard")}>
-          <Ionicons name="chevron-back" color="#FFFFFF" size={24} />
-        </Pressable>
-
-        <Text className="text-lg font-semibold text-white">Duty Calendar</Text>
-
-        <TouchableOpacity className="p-1">
-          <Bell size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView className="flex-1">
-        <View className="bg-slate-900 px-2 pb-4">
-          <Calendar
-            current={selectedDate || todayKey}
-            onDayPress={onDayPress}
-            markedDates={markedDates}
-            markingType="multi-dot"
-            enableSwipeMonths
-            theme={{
-              calendarBackground: "#0F172A",
-              textSectionTitleColor: "#94A3B8",
-              selectedDayBackgroundColor: "#1E293B",
-              selectedDayTextColor: "#fff",
-              todayTextColor: "#3B82F6",
-              dayTextColor: "#E2E8F0",
-              textDisabledColor: "#475569",
-              monthTextColor: "#fff",
-              arrowColor: "#3B82F6",
-            }}
-          />
-        </View>
-
-        {error && (
-          <View className="mx-4 mt-3 rounded-lg bg-red-900 px-4 py-3">
-            <Text className="text-xs text-red-100">{error}</Text>
-          </View>
-        )}
-
-        <View className="px-4 pt-4 pb-4">
-          <Text className="mb-3 text-base font-semibold text-white">
-            {selectedDate
-              ? `Duty Details - ${formatDate(selectedDate)}`
-              : "Select a date to view duties"}
-          </Text>
-
-          {loading ? (
-            <View className="py-8 items-center">
-              <ActivityIndicator size="large" color="#3B82F6" />
-            </View>
-          ) : dutyDetails.length === 0 ? (
-            <View className="mb-4 rounded-lg bg-slate-800 p-4">
-              <Text className="text-center text-gray-400">
-                No duties assigned for this date
-              </Text>
-            </View>
-          ) : (
-            dutyDetails.map((duty) => (
-              <View key={String(duty.id)} className="mb-4">
-                <View className="rounded-lg bg-slate-800 p-4">
-                  <View className="mb-3 flex-row items-start justify-between">
-                    <View className="flex-1 pr-3">
-                      <Text className="mb-1 text-base font-semibold text-white">
-                        {duty.taskType} - {duty.location}
-                      </Text>
-
-                      <View className="flex-row items-center">
-                        <Clock size={14} color="#94A3B8" />
-                        <Text className="ml-1 text-sm text-gray-400">
-                          {duty.timeRange}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <View
-                      className={`rounded-full px-3 py-1 ${dutyBadgeClass(duty.status)}`}
-                    >
-                      <Text className="text-[10px] font-medium text-white">
-                        {String(duty.status).toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View className="mb-2 flex-row items-center">
-                    <MapPin size={14} color="#94A3B8" />
-                    <Text className="ml-1 text-sm text-gray-300">
-                      {duty.location}
-                    </Text>
-                  </View>
-
-                  {!!duty.description && (
-                    <View className="mt-2 rounded bg-slate-700 p-2">
-                      <Text className="text-xs text-gray-200">
-                        {duty.description}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            ))
-          )}
-        </View>
-
-        <View className="px-4 pb-6">
-          <Text className="mb-3 text-base font-semibold text-white">
-            My Leave Requests
-          </Text>
-
-          {loadingLeaves ? (
-            <View className="items-center py-4">
-              <ActivityIndicator size="small" color="#F59E0B" />
-            </View>
-          ) : leaveRequests.length === 0 ? (
-            <View className="rounded-lg bg-slate-800 p-4">
-              <Text className="text-center text-gray-400">
-                No leave requests yet
-              </Text>
-            </View>
-          ) : (
-            leaveRequests
-              .slice()
-              .sort((a, b) => (a.date < b.date ? 1 : -1))
-              .map((l) => (
-                <View
-                  key={String(l.id)}
-                  className="mb-3 rounded-lg bg-slate-800 p-4"
-                >
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-sm font-semibold text-white">
-                      {formatDate(l.date)}
-                    </Text>
-
-                    <View
-                      className={`rounded-full px-3 py-1 ${leaveBadgeClass(l.status)}`}
-                    >
-                      <Text className="text-[10px] font-medium text-white">
-                        {String(l.status).toUpperCase()}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <Text className="mt-2 text-xs text-gray-300">
-                    Reason: {l.reason}
-                  </Text>
-
-                  {!!l.responseReason && (
-                    <Text className="mt-2 text-xs text-red-200">
-                      Response: {l.responseReason}
-                    </Text>
-                  )}
-                </View>
-              ))
-          )}
-        </View>
-
-        <View className="px-4 pb-8">
-          <TouchableOpacity
-            onPress={handleOpenLeaveModal}
-            className="rounded-lg bg-amber-600 py-4 shadow-lg"
-          >
-            <Text className="text-center text-base font-semibold text-white">
-              Request Leave
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      <Modal
-        visible={leaveModalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setLeaveModalVisible(false)}
+    <SafeAreaView style={styles.safeArea}>
+      <ImageBackground
+        source={images.bgApp}
+        style={styles.bg}
+        resizeMode="cover"
       >
-        <View className="flex-1 bg-black/50">
-          <View className="mt-auto rounded-t-3xl bg-slate-900 px-4 pt-6 pb-8">
-            <View className="mb-4 flex-row items-center justify-between">
-              <Text className="text-xl font-semibold text-white">
-                Request Leave
-              </Text>
-              <TouchableOpacity onPress={() => setLeaveModalVisible(false)}>
-                <X size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
+        <View style={[styles.overlay, { backgroundColor: colors.overlay }]}>
+          <View
+            style={[
+              styles.header,
+              {
+                backgroundColor: colors.card,
+                borderColor: colors.border,
+                shadowColor: colors.secondary,
+              },
+            ]}
+          >
+            <Pressable
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.push("/Dashboard")
+              }
+              style={[
+                styles.backButton,
+                {
+                  backgroundColor: colors.iconSurface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Ionicons name="chevron-back" color={colors.primary} size={22} />
+            </Pressable>
 
-            <View className="mb-4">
-              <RNCalendar
-                onDayPress={handleLeaveDateSelect}
-                markedDates={{
-                  [leaveSelectedDate]: {
-                    selected: true,
-                    selectedColor: "#F59E0B",
-                  },
-                }}
-                minDate={new Date().toISOString().split("T")[0]}
+            <Text style={[styles.headerTitle, { color: colors.text }]}>
+              Duty Calendar
+            </Text>
+
+            <TouchableOpacity
+              style={[
+                styles.bellButton,
+                {
+                  backgroundColor: colors.iconSurface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Bell size={18} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <View
+              style={[
+                styles.calendarCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Calendar
+                current={selectedDate || todayKey}
+                onDayPress={onDayPress}
+                markedDates={markedDates}
+                markingType="multi-dot"
+                enableSwipeMonths
                 theme={{
-                  calendarBackground: "#0F172A",
-                  textSectionTitleColor: "#94A3B8",
-                  selectedDayBackgroundColor: "#F59E0B",
-                  selectedDayTextColor: "#fff",
-                  todayTextColor: "#3B82F6",
-                  dayTextColor: "#E2E8F0",
-                  textDisabledColor: "#475569",
-                  monthTextColor: "#fff",
-                  arrowColor: "#F59E0B",
+                  calendarBackground: colors.card,
+                  textSectionTitleColor: colors.sidebarItemMutedText,
+                  selectedDayBackgroundColor: colors.menuSurface,
+                  selectedDayTextColor: colors.white,
+                  todayTextColor: colors.primary,
+                  dayTextColor: colors.text,
+                  textDisabledColor: colors.sidebarItemMutedText,
+                  monthTextColor: colors.text,
+                  arrowColor: colors.primary,
+                  dotColor: colors.primary,
                 }}
               />
             </View>
 
-            {leaveSelectedDate && (
-              <Text className="mb-2 text-sm text-gray-400">
+            {!!error && (
+              <View
+                style={[styles.errorCard, { backgroundColor: colors.danger }]}
+              >
+                <Text style={[styles.errorText, { color: colors.white }]}>
+                  {error}
+                </Text>
+              </View>
+            )}
+
+            <View
+              style={[
+                styles.sectionCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                {selectedDate
+                  ? `Duty Details - ${formatDate(selectedDate)}`
+                  : "Select a date to view duties"}
+              </Text>
+
+              {loading ? (
+                <View style={styles.loaderWrap}>
+                  <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+              ) : dutyDetails.length === 0 ? (
+                <View
+                  style={[
+                    styles.emptyState,
+                    {
+                      backgroundColor: colors.iconSurface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      { color: colors.sidebarItemMutedText },
+                    ]}
+                  >
+                    No duties assigned for this date
+                  </Text>
+                </View>
+              ) : (
+                dutyDetails.map((duty) => {
+                  const palette = getDutyBadgePalette(duty.status);
+
+                  return (
+                    <View
+                      key={String(duty.id)}
+                      style={[
+                        styles.dutyCard,
+                        {
+                          backgroundColor: colors.iconSurface,
+                          borderColor: colors.border,
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.dutyHead,
+                          { flexDirection: isCompact ? "column" : "row" },
+                        ]}
+                      >
+                        <View style={styles.dutyHeadTextWrap}>
+                          <Text
+                            style={[styles.dutyTitle, { color: colors.text }]}
+                          >
+                            {duty.taskType} - {duty.location}
+                          </Text>
+
+                          <View style={styles.metaRow}>
+                            <Clock
+                              size={14}
+                              color={colors.sidebarItemMutedText}
+                            />
+                            <Text
+                              style={[
+                                styles.metaRowText,
+                                { color: colors.sidebarItemMutedText },
+                              ]}
+                            >
+                              {duty.timeRange}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <View
+                          style={[
+                            styles.statusBadge,
+                            {
+                              backgroundColor: palette.bg,
+                              borderColor: palette.border,
+                              marginTop: isCompact ? 8 : 0,
+                              alignSelf: isCompact
+                                ? "flex-start"
+                                : "flex-start",
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.statusBadgeText,
+                              { color: palette.text },
+                            ]}
+                          >
+                            {String(duty.status).toUpperCase()}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.metaRow}>
+                        <MapPin size={14} color={colors.sidebarItemMutedText} />
+                        <Text
+                          style={[
+                            styles.metaRowText,
+                            { color: colors.sidebarItemMutedText },
+                          ]}
+                        >
+                          {duty.location}
+                        </Text>
+                      </View>
+
+                      {!!duty.description && (
+                        <View
+                          style={[
+                            styles.descriptionBox,
+                            {
+                              backgroundColor: colors.card,
+                              borderColor: colors.border,
+                            },
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.descriptionText,
+                              { color: colors.text },
+                            ]}
+                          >
+                            {duty.description}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </View>
+
+            <View
+              style={[
+                styles.sectionCard,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                My Leave Requests
+              </Text>
+
+              {loadingLeaves ? (
+                <View style={styles.loaderWrap}>
+                  <ActivityIndicator size="small" color={colors.accent} />
+                </View>
+              ) : leaveRequests.length === 0 ? (
+                <View
+                  style={[
+                    styles.emptyState,
+                    {
+                      backgroundColor: colors.iconSurface,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.emptyText,
+                      { color: colors.sidebarItemMutedText },
+                    ]}
+                  >
+                    No leave requests yet
+                  </Text>
+                </View>
+              ) : (
+                leaveRequests
+                  .slice()
+                  .sort((a, b) => (a.date < b.date ? 1 : -1))
+                  .map((leave) => {
+                    const palette = getLeaveBadgePalette(leave.status);
+
+                    return (
+                      <View
+                        key={String(leave.id)}
+                        style={[
+                          styles.leaveCard,
+                          {
+                            backgroundColor: colors.iconSurface,
+                            borderColor: colors.border,
+                          },
+                        ]}
+                      >
+                        <View style={styles.leaveHeader}>
+                          <Text
+                            style={[styles.leaveDate, { color: colors.text }]}
+                          >
+                            {formatDate(leave.date)}
+                          </Text>
+
+                          <View
+                            style={[
+                              styles.statusBadge,
+                              {
+                                backgroundColor: palette.bg,
+                                borderColor: palette.border,
+                              },
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.statusBadgeText,
+                                { color: palette.text },
+                              ]}
+                            >
+                              {String(leave.status).toUpperCase()}
+                            </Text>
+                          </View>
+                        </View>
+
+                        <Text
+                          style={[styles.leaveReason, { color: colors.text }]}
+                        >
+                          Reason: {leave.reason}
+                        </Text>
+
+                        {!!leave.responseReason && (
+                          <Text
+                            style={[
+                              styles.leaveResponse,
+                              { color: colors.danger },
+                            ]}
+                          >
+                            Response: {leave.responseReason}
+                          </Text>
+                        )}
+                      </View>
+                    );
+                  })
+              )}
+            </View>
+
+            <TouchableOpacity
+              onPress={handleOpenLeaveModal}
+              style={[
+                styles.leaveRequestButton,
+                { backgroundColor: colors.accent },
+              ]}
+            >
+              <Text
+                style={[styles.leaveRequestButtonText, { color: colors.white }]}
+              >
+                Request Leave
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </ImageBackground>
+
+      <Modal
+        visible={leaveModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setLeaveModalVisible(false)}
+      >
+        <View
+          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
+        >
+          <View
+            style={[
+              styles.modalSheet,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Request Leave
+              </Text>
+              <TouchableOpacity
+                onPress={() => setLeaveModalVisible(false)}
+                style={[
+                  styles.modalClose,
+                  {
+                    backgroundColor: colors.iconSurface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <X size={18} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalCalendarWrap}>
+              <RNCalendar
+                onDayPress={handleLeaveDateSelect}
+                markedDates={
+                  leaveSelectedDate
+                    ? {
+                        [leaveSelectedDate]: {
+                          selected: true,
+                          selectedColor: colors.accent,
+                        },
+                      }
+                    : {}
+                }
+                minDate={todayKey}
+                theme={{
+                  calendarBackground: colors.card,
+                  textSectionTitleColor: colors.sidebarItemMutedText,
+                  selectedDayBackgroundColor: colors.accent,
+                  selectedDayTextColor: colors.white,
+                  todayTextColor: colors.primary,
+                  dayTextColor: colors.text,
+                  textDisabledColor: colors.sidebarItemMutedText,
+                  monthTextColor: colors.text,
+                  arrowColor: colors.accent,
+                }}
+              />
+            </View>
+
+            {!!leaveSelectedDate && (
+              <Text
+                style={[
+                  styles.selectedDateText,
+                  { color: colors.sidebarItemMutedText },
+                ]}
+              >
                 Selected: {formatDate(leaveSelectedDate)}
               </Text>
             )}
 
-            <View className="mb-4">
-              <Text className="mb-2 text-sm font-medium text-white">
+            <View style={styles.reasonWrap}>
+              <Text style={[styles.reasonLabel, { color: colors.text }]}>
                 Reason for Leave
               </Text>
               <TextInput
-                className="rounded-lg bg-slate-800 px-4 py-3 text-white"
+                style={[
+                  styles.reasonInput,
+                  {
+                    backgroundColor: colors.iconSurface,
+                    borderColor: colors.border,
+                    color: colors.text,
+                  },
+                ]}
                 placeholder="Enter reason..."
-                placeholderTextColor="#6B7280"
+                placeholderTextColor={colors.sidebarItemMutedText}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -586,13 +891,17 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
               disabled={
                 submittingLeave || !leaveSelectedDate || !leaveReason.trim()
               }
-              className={`rounded-lg py-4 ${
-                submittingLeave || !leaveSelectedDate || !leaveReason.trim()
-                  ? "bg-gray-600"
-                  : "bg-amber-600"
-              }`}
+              style={[
+                styles.submitButton,
+                {
+                  backgroundColor:
+                    submittingLeave || !leaveSelectedDate || !leaveReason.trim()
+                      ? colors.sidebarItemMutedText
+                      : colors.accent,
+                },
+              ]}
             >
-              <Text className="text-center text-base font-semibold text-white">
+              <Text style={[styles.submitButtonText, { color: colors.white }]}>
                 {submittingLeave ? "Submitting..." : "Submit Request"}
               </Text>
             </TouchableOpacity>
@@ -602,3 +911,274 @@ export default function DutyCalendarScreen({ navigation, route }: Props) {
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+  bg: {
+    flex: 1,
+  },
+  overlay: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+  },
+  centerCard: {
+    marginTop: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  centerText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  missingOfficerText: {
+    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
+  header: {
+    borderWidth: 1,
+    borderRadius: 18,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  backButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  bellButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scrollContent: {
+    paddingBottom: 20,
+    gap: 10,
+  },
+  calendarCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 6,
+    overflow: "hidden",
+  },
+  errorCard: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  errorText: {
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  sectionCard: {
+    borderWidth: 1,
+    borderRadius: 18,
+    padding: 12,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+  loaderWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+  },
+  emptyState: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+  },
+  emptyText: {
+    textAlign: "center",
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  dutyCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+  },
+  dutyHead: {
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  dutyHeadTextWrap: {
+    flex: 1,
+    width: "100%",
+  },
+  dutyTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 2,
+  },
+  metaRowText: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  statusBadge: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  statusBadgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  descriptionBox: {
+    borderWidth: 1,
+    borderRadius: 10,
+    marginTop: 10,
+    padding: 8,
+  },
+  descriptionText: {
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  leaveCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 12,
+    marginBottom: 10,
+  },
+  leaveHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  leaveDate: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  leaveReason: {
+    marginTop: 8,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  leaveResponse: {
+    marginTop: 6,
+    fontSize: 12,
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  leaveRequestButton: {
+    borderRadius: 14,
+    minHeight: 48,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 14,
+  },
+  leaveRequestButtonText: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    paddingTop: 14,
+    paddingHorizontal: 14,
+    paddingBottom: 20,
+    maxHeight: "88%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+  },
+  modalClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  modalCalendarWrap: {
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  selectedDateText: {
+    marginTop: 8,
+    fontSize: 13,
+    fontWeight: "500",
+  },
+  reasonWrap: {
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  reasonLabel: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    minHeight: 98,
+    fontSize: 14,
+  },
+  submitButton: {
+    borderRadius: 12,
+    minHeight: 46,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitButtonText: {
+    fontSize: 15,
+    fontWeight: "700",
+  },
+});

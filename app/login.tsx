@@ -5,12 +5,14 @@ import {
   setBiometricsEnabled as setBiometricsEnabledPref,
 } from "@/src/auth/auth";
 import { images } from "@/src/constants/images";
+import { Theme } from "@/src/theme/theme";
+import { useTheme } from "@/src/theme/ThemeProvider";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "@react-navigation/native";
 import { isAxiosError } from "axios";
 import * as LocalAuthentication from "expo-local-authentication";
 import { router } from "expo-router";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -25,6 +27,9 @@ import {
 import { useAuth } from "../src/hooks/useAuth";
 
 export default function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -151,245 +156,283 @@ export default function LoginScreen() {
       source={images.bgApp}
       style={styles.container}
       resizeMode="cover"
-      imageStyle={{ opacity: 0.8 }}
+      imageStyle={{ opacity: 1 }}
     >
-      {/* LOGO */}
-      <Image source={images.logo} style={styles.logo} />
-      {/* TITLE */}
-      <Text style={styles.title}>Crime Link Analyzer</Text>
-      <Text style={styles.subtitle}>Field Officer Secure Portal</Text>
-      {/* LOGIN TEXT */}
-      <Text style={styles.loginText}>Login to your account</Text>
-      {!!error && (
-        <Text className="text-red-600 text-center mb-3">{error}</Text>
-      )}
-      {/* USERNAME */}
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter email"
-        placeholderTextColor="#cbd5e1"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-        editable={!loading}
-      />
-      {/* PASSWORD */}
-      <Text style={styles.label}>Password</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter password"
-        placeholderTextColor="#cbd5e1"
-        secureTextEntry
-        value={password}
-        onChangeText={setPassword}
-        editable={!loading}
-      />
-      {/* REMEMBER ME */}
-      <View style={styles.rememberRow}>
-        <TouchableOpacity
-          style={[styles.checkbox, rememberMe && styles.checkboxActive]}
-          onPress={() => setRememberMe(!rememberMe)}
-        >
-          <View
-            className={`w-5 h-5 rounded border border-gray-400 items-center justify-center ${
-              rememberMe ? "bg-black" : "bg-white"
-            }`}
+      <View style={styles.overlay}>
+        {/* LOGO */}
+        <Image source={images.logo} style={styles.logo} />
+        {/* TITLE */}
+        <Text style={styles.title}>Crime Link Analyzer</Text>
+        <Text style={styles.subtitle}>Field Officer Secure Portal</Text>
+        {/* LOGIN TEXT */}
+        <Text style={styles.loginText}>Login to your account</Text>
+        {!!error && <Text style={styles.errorText}>{error}</Text>}
+        {/* USERNAME */}
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter email"
+          placeholderTextColor={colors.sidebarItemMutedText}
+          autoCapitalize="none"
+          value={email}
+          onChangeText={setEmail}
+          editable={!loading}
+        />
+        {/* PASSWORD */}
+        <Text style={styles.label}>Password</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter password"
+          placeholderTextColor={colors.sidebarItemMutedText}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          editable={!loading}
+        />
+        {/* REMEMBER ME */}
+        <View style={styles.rememberRow}>
+          <TouchableOpacity
+            style={[styles.checkbox, rememberMe && styles.checkboxActive]}
+            onPress={() => setRememberMe(!rememberMe)}
           >
-            {rememberMe ? (
-              <Ionicons name="checkmark" size={16} color="white" />
-            ) : null}
-          </View>
-        </TouchableOpacity>
-        <Text style={styles.rememberText}>Remember me</Text>
-      </View>
-
-      {!isBiometricsSupported ? (
-        <Text style={styles.biometricHint}>
-          Biometric login is not available on this device.
-        </Text>
-      ) : !isBiometricsEnrolled ? (
-        <Text style={styles.biometricHint}>
-          Set up Fingerprint/Face ID in your device settings to enable biometric
-          login.
-        </Text>
-      ) : null}
-
-      {/* LOGIN BUTTON */}
-      <TouchableOpacity
-        disabled={loading}
-        onPress={handleSubmit}
-        style={styles.loginButton}
-      >
-        {loading ? (
-          <View className="flex-row items-center">
-            <ActivityIndicator color="white" />
-            <Text
-              style={styles.loginButtonText}
-              // className="text-white font-semibold ml-2"
+            <View
+              style={[
+                styles.checkboxInner,
+                rememberMe
+                  ? styles.checkboxInnerChecked
+                  : styles.checkboxInnerUnchecked,
+              ]}
             >
-              Logging in...
-            </Text>
-          </View>
-        ) : (
-          <Text className="text-white font-semibold">Login</Text>
-        )}
-      </TouchableOpacity>
-      {/* FORGOT PASSWORD */}
-      <Pressable
-        disabled={loading}
-        onPress={() => console.log("Fogot Password pressed")}
-      >
-        <Text style={styles.forgot}>Forgot Password</Text>
-      </Pressable>
-      {/* FINGERPRINT */}
-      <TouchableOpacity
-        disabled={loading}
-        onPress={handleBiometricLogin}
-        style={
-          !isBiometricsSupported ||
-          !isBiometricsEnrolled ||
-          !biometricsEnabled ||
-          !hasSavedRefreshToken
-            ? { opacity: 0.45 }
-            : undefined
-        }
-      >
-        <Image source={images.fingerprint} style={styles.fingerprint} />
-      </TouchableOpacity>
-      {/* FOOTER */}
-      <Text style={styles.footer}>
-        Access to this system is restricted to authorized personnel of the Sri
-        Lanka Crime Division only
-      </Text>
-      {/* END OF BACKGROUND IMAGE */}
-      <View style={styles.overlay}></View>
+              {rememberMe ? (
+                <Ionicons name="checkmark" size={16} color={colors.white} />
+              ) : null}
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.rememberText}>Remember me</Text>
+        </View>
+
+        {!isBiometricsSupported ? (
+          <Text style={styles.biometricHint}>
+            Biometric login is not available on this device.
+          </Text>
+        ) : !isBiometricsEnrolled ? (
+          <Text style={styles.biometricHint}>
+            Set up Fingerprint/Face ID in your device settings to enable
+            biometric login.
+          </Text>
+        ) : null}
+
+        {/* LOGIN BUTTON */}
+        <TouchableOpacity
+          disabled={loading}
+          onPress={handleSubmit}
+          style={styles.loginButton}
+        >
+          {loading ? (
+            <View style={styles.loginButtonLoadingRow}>
+              <ActivityIndicator color={colors.white} />
+              <Text style={[styles.loginButtonText, styles.loadingButtonText]}>
+                Logging in...
+              </Text>
+            </View>
+          ) : (
+            <Text style={styles.loginButtonText}>Login</Text>
+          )}
+        </TouchableOpacity>
+        {/* FORGOT PASSWORD */}
+        <Pressable
+          disabled={loading}
+          onPress={() =>
+            alert("Please contact your administrator to reset your password.")
+          }
+        >
+          <Text style={styles.forgot}>Forgot Password</Text>
+        </Pressable>
+        {/* FINGERPRINT */}
+        <TouchableOpacity
+          disabled={loading}
+          onPress={handleBiometricLogin}
+          style={
+            !isBiometricsSupported ||
+            !isBiometricsEnrolled ||
+            !biometricsEnabled ||
+            !hasSavedRefreshToken
+              ? { opacity: 0.45 }
+              : undefined
+          }
+        >
+          <Ionicons name="finger-print-sharp" color={colors.white} size={50} />
+        </TouchableOpacity>
+        {/* FOOTER */}
+        <Text style={styles.footer}>
+          Access to this system is restricted to authorized personnel of the Sri
+          Lanka Crime Division only
+        </Text>
+      </View>
     </ImageBackground>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    paddingHorizontal: 30,
-    paddingTop: 80,
-  },
+const createStyles = (colors: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
 
-  logo: {
-    width: 70,
-    height: 70,
-    marginBottom: 20,
-    resizeMode: "contain",
-  },
+    overlay: {
+      flex: 1,
+      alignItems: "center",
+      paddingHorizontal: 30,
+      paddingTop: 100,
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: colors.overlay,
+    },
 
-  title: {
-    fontSize: 32,
-    fontWeight: "bold",
-    color: "#fff",
-    textAlign: "center",
-  },
+    logo: {
+      width: 80,
+      height: 80,
+      marginBottom: 20,
+      resizeMode: "contain",
+    },
 
-  subtitle: {
-    color: "#cbd5f5",
-    fontSize: 12,
-    marginBottom: 40,
-  },
+    title: {
+      fontSize: 32,
+      fontWeight: "bold",
+      color: colors.white,
+      textAlign: "center",
+    },
 
-  loginText: {
-    color: "#fff",
-    fontSize: 18,
-    marginBottom: 25,
-  },
+    subtitle: {
+      color: colors.primaryAccent,
+      fontSize: 13,
+      fontWeight: "600",
+      marginBottom: 40,
+    },
 
-  label: {
-    alignSelf: "flex-start",
-    color: "#fff",
-    fontSize: 14,
-    marginBottom: 6,
-  },
+    loginText: {
+      color: colors.white,
+      fontSize: 18,
+      marginBottom: 25,
+    },
 
-  input: {
-    width: "100%",
-    height: 48,
-    backgroundColor: "rgba(255,255,255,0.85)",
-    borderRadius: 25,
-    paddingHorizontal: 18,
-    marginBottom: 18,
-    color: "#000",
-  },
+    errorText: {
+      color: colors.danger,
+      textAlign: "center",
+      marginBottom: 12,
+    },
 
-  rememberRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    marginBottom: 30,
-  },
+    label: {
+      alignSelf: "flex-start",
+      color: colors.white,
+      fontSize: 14,
+      marginBottom: 6,
+    },
 
-  checkbox: {
-    width: 14,
-    height: 14,
-    borderRadius: 3,
-    backgroundColor: "#e5e7eb",
-    marginRight: 8,
-  },
+    input: {
+      width: "100%",
+      height: 48,
+      backgroundColor: colors.white,
+      borderRadius: 25,
+      paddingHorizontal: 18,
+      marginBottom: 18,
+      color: colors.black,
+    },
 
-  checkboxActive: {
-    backgroundColor: "#4f46e5",
-  },
+    rememberRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      alignSelf: "flex-start",
+      marginBottom: 38,
+    },
 
-  rememberText: {
-    color: "#fff",
-    fontSize: 13,
-  },
+    checkbox: {
+      width: 14,
+      height: 14,
+      borderRadius: 3,
+      backgroundColor: colors.border,
+      marginRight: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  biometricHint: {
-    color: "#cbd5f5",
-    fontSize: 12,
-    alignSelf: "flex-start",
-    marginBottom: 30,
-  },
+    checkboxActive: {
+      backgroundColor: colors.secondary,
+    },
 
-  loginButton: {
-    backgroundColor: "#4f46e5",
-    width: 120,
-    height: 42,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
+    checkboxInner: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
 
-  loginButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
+    checkboxInnerChecked: {
+      backgroundColor: colors.text,
+    },
 
-  forgot: {
-    color: "#e5e7eb",
-    fontSize: 14,
-    marginBottom: 30,
-  },
+    checkboxInnerUnchecked: {
+      backgroundColor: colors.white,
+    },
 
-  fingerprint: {
-    width: 56,
-    height: 56,
-    marginBottom: 30,
-    resizeMode: "contain",
-  },
+    rememberText: {
+      color: colors.white,
+      fontSize: 13,
+    },
 
-  footer: {
-    color: "#cbd5f5",
-    fontSize: 9,
-    textAlign: "center",
-    position: "absolute",
-    bottom: 25,
-    paddingHorizontal: 20,
-  },
+    biometricHint: {
+      color: colors.primaryAccent,
+      fontSize: 12,
+      alignSelf: "flex-start",
+      marginBottom: 30,
+    },
 
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)", // 0.6 = opacity
-  },
-});
+    loginButton: {
+      backgroundColor: colors.secondary,
+      width: 120,
+      height: 42,
+      borderRadius: 22,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 16,
+    },
+
+    loginButtonLoadingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+
+    loadingButtonText: {
+      marginLeft: 8,
+    },
+
+    loginButtonText: {
+      color: colors.white,
+      fontWeight: "bold",
+      fontSize: 18,
+    },
+
+    forgot: {
+      color: colors.sidebarItemMutedText,
+      fontSize: 14,
+      marginBottom: 30,
+    },
+
+    fingerprint: {
+      width: 60,
+      height: 60,
+      marginBottom: 30,
+      resizeMode: "contain",
+    },
+
+    footer: {
+      color: colors.primaryAccent,
+      fontSize: 9,
+      textAlign: "center",
+      position: "absolute",
+      bottom: 25,
+      paddingHorizontal: 20,
+    },
+  });
